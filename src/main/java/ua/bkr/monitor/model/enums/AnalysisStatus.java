@@ -1,0 +1,6 @@
+package ua.bkr.monitor.model.enums;
+
+public enum AnalysisStatus {
+    COLLECTING_DATA, ANONYMIZING, CLASSIFYING, EXTRACTING_CHARACTERISTICS,
+    GENERATING_REPORT, COMPLETED, FAILED
+}
