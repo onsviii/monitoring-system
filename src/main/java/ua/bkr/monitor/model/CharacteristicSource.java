@@ -24,10 +24,3 @@ public class CharacteristicSource {
     private Review review;
 }
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class CharacteristicSourceId implements Serializable {
-    private UUID characteristic;
-    private UUID review;
-}

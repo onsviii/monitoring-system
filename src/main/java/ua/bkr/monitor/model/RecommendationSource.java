@@ -24,10 +24,3 @@ public class RecommendationSource {
     private Review review;
 }
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class RecommendationSourceId implements Serializable {
-    private UUID recommendation;
-    private UUID review;
-}
