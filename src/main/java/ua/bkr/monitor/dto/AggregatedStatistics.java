@@ -1,5 +1,7 @@
 package ua.bkr.monitor.dto;
 
+import ua.bkr.monitor.model.enums.Aspect;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +31,7 @@ public record AggregatedStatistics(
     public record CompetitorAspectProfile(
             UUID competitorId,
             String competitorName,
-            Map<String, Double> aspects
+            Map<Aspect, Double> aspects
     ) {}
 
     /**
@@ -40,7 +42,7 @@ public record AggregatedStatistics(
     public record HeatmapRow(
             UUID competitorId,
             String competitorName,
-            Map<String, Double> aspects
+            Map<Aspect, Double> aspects
     ) {}
 
     /**
