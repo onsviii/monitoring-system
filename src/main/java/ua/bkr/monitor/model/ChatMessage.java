@@ -15,7 +15,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class DialogueMessage {
+public class ChatMessage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

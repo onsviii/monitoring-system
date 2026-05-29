@@ -53,5 +53,5 @@ public class AnalysisSession {
     private AnalyticalReport analyticalReports;
 
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL)
-    private List<DialogueMessage> dialogueMessages;
+    private List<ChatMessage> chatMessages;
 }
