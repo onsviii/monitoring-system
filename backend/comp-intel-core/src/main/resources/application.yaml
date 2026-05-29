@@ -31,13 +31,17 @@ spring:
         queue-capacity: 10
       thread-name-prefix: pipeline-
 
+  groq:
+    url: https://api.groq.com/openai/v1/chat/completions
+    api-key: ${GROQ_API_KEY}
+    model: ${GROQ_MODEL:llama-3.3-70b-versatile}
+
 google:
   places:
     api-key: ${GOOGLE_PLACES_API_KEY}
+    text-search-url: https://places.googleapis.com/v1/places:searchText
+    place-details-url: https://places.googleapis.com/v1/places/%s
 
-groq:
-  api-key: ${GROQ_API_KEY}
-  model: ${GROQ_MODEL:llama-3.3-70b-versatile}
 
 ml-service:
   base-url: ${ML_SERVICE_URL:http://localhost:8001}
