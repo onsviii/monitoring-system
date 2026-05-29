@@ -7,6 +7,5 @@ import java.util.List;
 import java.util.UUID;
 
 public interface RecommendationRepository extends JpaRepository<Recommendation, UUID> {
-
-    List<Recommendation> findByReportId(Long reportId);
+    List<Recommendation> findByReportId(UUID reportId);
 }
