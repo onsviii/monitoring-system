@@ -17,7 +17,6 @@ public class Competitor {
     private UUID id;
 
     private String externalApiId;
-
     private String name;
     private String address;
     private String category;

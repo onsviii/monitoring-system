@@ -28,6 +28,7 @@ public class AnalysisSession {
     private String businessNiche;
     private String geographicZone;
     private String competitorSelectionMode;
+    private Integer radiusKm;
 
     @Enumerated(EnumType.STRING)
     private AnalysisStatus status;
