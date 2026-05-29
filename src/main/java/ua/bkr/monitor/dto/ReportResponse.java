@@ -10,7 +10,7 @@ public record ReportResponse(
         UUID sessionId,
         LocalDateTime generatedAt,
         Boolean aiMarked,
-        String aggregatedStatistics,
+        AggregatedStatistics aggregatedStatistics,
         List<CompetitorDto> competitors,
         List<RecommendationDto> recommendations
 ) {}
