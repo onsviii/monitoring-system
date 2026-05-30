@@ -33,7 +33,7 @@ public class AnalysisSession {
     @Embedded
     private Location location;
 
-    private Integer radiusKm;
+    private Double radiusKm;
 
     @Enumerated(EnumType.STRING)
     private AnalysisStatus status;
