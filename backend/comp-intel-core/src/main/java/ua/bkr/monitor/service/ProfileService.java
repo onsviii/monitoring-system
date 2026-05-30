@@ -49,7 +49,7 @@ public class ProfileService {
 
     private void setFirebaseRoleClaim(String userId, Role role) {
         try {
-            firebaseAuth.setCustomUserClaims(userId, Map.of("role", role));
+            firebaseAuth.setCustomUserClaims(userId, Map.of("role", role.name()));
             log.info("Firebase custom claim 'role={}' set for user {}", role, userId);
         } catch (FirebaseAuthException e) {
             log.error("Failed to set Firebase custom claims for user {}: {}", userId, e.getMessage());
