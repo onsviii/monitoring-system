@@ -79,4 +79,11 @@ public class AnalysisController {
         SourcesResponse response = reportService.getSources(userId, id, competitor, aspect);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/{sessionId}/retry")
+    public ResponseEntity<AnalysisStatusResponse> retryAnalysis(
+            @AuthenticationPrincipal String userId, @PathVariable UUID sessionId) {
+
+        return ResponseEntity.ok(analysisService.retryAnalysis(userId, sessionId));
+    }
 }
