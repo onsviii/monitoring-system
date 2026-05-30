@@ -7,7 +7,8 @@ import jakarta.validation.constraints.Positive;
 import ua.bkr.monitor.model.record.Location;
 
 public record CreateAnalysisRequest(
-        @NotBlank String reportName ,
+        @NotBlank String nicheCode,
+        @NotBlank String reportName,
         @NotNull Location location,
         @Positive Double radiusKm,
         @Max(10) Integer maxCompetitors

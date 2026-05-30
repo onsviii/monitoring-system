@@ -2,10 +2,14 @@ package ua.bkr.monitor.dto;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import ua.bkr.monitor.model.record.Location;
 
 public record AnalysisPreviewRequest(
+        @NotBlank(message = "Niche code is required")
+        String nicheCode,
+
         @NotNull(message = "Location coordinates are required")
         Location location,
 
