@@ -14,9 +14,12 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import ua.bkr.monitor.model.enums.Role;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Component
@@ -27,6 +30,7 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
 
     private static final String AUTH_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String DEFAULT_ROLE = Role.BUSINESS.name();
 
     @Override
     protected void doFilterInternal(
@@ -46,9 +50,13 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
 
         try {
             FirebaseToken decodedToken = firebaseAuth.verifyIdToken(idToken);
-
             String uid = decodedToken.getUid();
             String role = extractRole(decodedToken);
+
+            if (role == null) {
+                role = DEFAULT_ROLE;
+                assignDefaultRoleAsync(uid);
+            }
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
@@ -61,8 +69,6 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
 
         } catch (FirebaseAuthException e) {
             log.warn("Invalid Firebase token: {}", e.getMessage());
-            filterChain.doFilter(request, response);
-            return;
         }
 
         filterChain.doFilter(request, response);
@@ -75,6 +81,17 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
             return role;
         }
 
-        throw new RuntimeException("Missing role claim in token");
+        return null;
+    }
+
+    private void assignDefaultRoleAsync(String uid) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                firebaseAuth.setCustomUserClaims(uid, Map.of("role", DEFAULT_ROLE));
+                log.info("Default role '{}' assigned to uid={}", DEFAULT_ROLE, uid);
+            } catch (FirebaseAuthException e) {
+                log.error("Failed to assign default role to uid={}: {}", uid, e.getMessage());
+            }
+        });
     }
 }
