@@ -14,6 +14,7 @@ import ua.bkr.monitor.mapper.AnalysisSessionMapper;
 import ua.bkr.monitor.model.AnalysisSession;
 import ua.bkr.monitor.model.Niche;
 import ua.bkr.monitor.model.UserProfile;
+import ua.bkr.monitor.model.enums.AnalysisStage;
 import ua.bkr.monitor.repository.AnalysisSessionRepository;
 import ua.bkr.monitor.repository.NicheRepository;
 import ua.bkr.monitor.repository.UserProfileRepository;
@@ -69,6 +70,20 @@ public class AnalysisService {
 
         if (!session.getUser().getId().equals(userId)) {
             throw new RuntimeException("Access denied to session: " + sessionId);
+        }
+
+        return new AnalysisStatusResponse(session.getId(), session.getStatus());
+    }
+
+    @Transactional
+    public AnalysisStatusResponse retryAnalysis(String userId, UUID sessionId) {
+        AnalysisSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
+
+        if (session.getStatus() == AnalysisStage.FAILED) {
+            session.setStatus(AnalysisStage.);
+            sessionRepository.save(session);
+            pipelineOrchestrator.resumeAsync(sessionId);
         }
 
         return new AnalysisStatusResponse(session.getId(), session.getStatus());
