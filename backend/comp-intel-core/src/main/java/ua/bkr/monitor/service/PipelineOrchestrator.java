@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+import ua.bkr.monitor.AnalysisCreatedEvent;
 import ua.bkr.monitor.dto.AggregatedStatistics;
 import ua.bkr.monitor.dto.CreateAnalysisRequest;
 import ua.bkr.monitor.exception.DataCollectionException;
@@ -52,6 +55,12 @@ public class PipelineOrchestrator {
     private final GooglePlacesClient googlePlacesClient;
     private final MlServiceClient mlServiceClient;
     private final LlmAnalysisService llmAnalysisService;
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleAnalysisCreated(AnalysisCreatedEvent event) {
+        runAsync(event.sessionId(), event.request());
+    }
 
     @Async
     public void runAsync(UUID sessionId, CreateAnalysisRequest request) {
@@ -255,7 +264,7 @@ public class PipelineOrchestrator {
             UUID sessionId, CreateAnalysisRequest request,
             List<ExtractedCharacteristic> characteristics) {
 
-        AnalysisSession session = sessionRepository.findById(sessionId)
+        AnalysisSession session = sessionRepository.findWithNicheById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found: " + sessionId));
 
         AggregatedStatistics stats = statisticsAggregator.aggregate(sessionId);

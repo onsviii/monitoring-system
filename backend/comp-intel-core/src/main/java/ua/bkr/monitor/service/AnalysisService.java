@@ -1,8 +1,10 @@
 package ua.bkr.monitor.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ua.bkr.monitor.AnalysisCreatedEvent;
 import ua.bkr.monitor.dto.AnalysisPreviewRequest;
 import ua.bkr.monitor.dto.AnalysisStatusResponse;
 import ua.bkr.monitor.dto.CreateAnalysisRequest;
@@ -27,6 +29,7 @@ public class AnalysisService {
     private final PipelineOrchestrator pipelineOrchestrator;
     private final AnalysisSessionMapper sessionMapper;
     private final PlacesService placesService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Попередній пошук конкурентів без створення сесії в БД.
@@ -54,7 +57,7 @@ public class AnalysisService {
 
         AnalysisSession session = sessionMapper.toEntity(request, user, niche);
         session = sessionRepository.save(session);
-        pipelineOrchestrator.runAsync(session.getId(), request);
+        eventPublisher.publishEvent(new AnalysisCreatedEvent(session.getId(), request));
 
         return sessionMapper.toStatusResponse(session);
     }
