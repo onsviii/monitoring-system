@@ -58,10 +58,18 @@ public class GooglePlacesClient {
         body.put("textQuery", googleTypes.get(0));
         body.put("languageCode", "uk");
         body.put("maxResultCount", maxResults);
+
+        double lat = location.latitude();
+        double lng = location.longitude();
+        double earthRadius = 6371.0;
+
+        double dLat = Math.toDegrees(radiusKm / earthRadius);
+        double dLng = Math.toDegrees(radiusKm / earthRadius / Math.cos(Math.toRadians(lat)));
+
         body.put("locationRestriction", Map.of(
-                "circle", Map.of(
-                        "center", Map.of("latitude", location.latitude(), "longitude", location.longitude()),
-                        "radius", radiusKm * 1000.0
+                "rectangle", Map.of(
+                        "low", Map.of("latitude", lat - dLat, "longitude", lng - dLng),
+                        "high", Map.of("latitude", lat + dLat, "longitude", lng + dLng)
                 )
         ));
 
