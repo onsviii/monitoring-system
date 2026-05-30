@@ -19,7 +19,11 @@ public class Competitor {
     private String externalApiId;
     private String name;
     private String address;
-    private String category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "niche_id")
+    private Niche niche;
+
     private Double rating;
 
     @ManyToOne(fetch = FetchType.LAZY)
