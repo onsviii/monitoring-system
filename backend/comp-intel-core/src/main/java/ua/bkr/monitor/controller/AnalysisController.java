@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import ua.bkr.monitor.dto.*;
+import ua.bkr.monitor.model.enums.Aspect;
 import ua.bkr.monitor.service.AnalysisService;
 import ua.bkr.monitor.service.ReportService;
 
@@ -73,7 +74,7 @@ public class AnalysisController {
     @GetMapping("/{id}/sources")
     public ResponseEntity<SourcesResponse> getSources(
             @AuthenticationPrincipal String userId, @PathVariable UUID id,
-            @RequestParam UUID competitor, @RequestParam String aspect) {
+            @RequestParam UUID competitor, @RequestParam Aspect aspect) {
 
         SourcesResponse response = reportService.getSources(userId, id, competitor, aspect);
         return ResponseEntity.ok(response);
