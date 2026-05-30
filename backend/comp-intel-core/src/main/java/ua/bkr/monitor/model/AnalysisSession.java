@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import ua.bkr.monitor.model.enums.AnalysisStage;
+import ua.bkr.monitor.model.enums.SessionStatus;
 import ua.bkr.monitor.model.record.Location;
 
 import java.time.LocalDateTime;
@@ -36,7 +37,10 @@ public class AnalysisSession {
     private Double radiusKm;
 
     @Enumerated(EnumType.STRING)
-    private AnalysisStage status;
+    private SessionStatus status;
+
+    @Enumerated(EnumType.STRING)
+    private AnalysisStage stage;
 
     @CreationTimestamp
     @Column(nullable = false)
