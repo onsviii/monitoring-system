@@ -29,6 +29,10 @@ public class UserProfile {
     @Column(nullable = false)
     private String businessName;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "niche_id", nullable = false)
+    private Niche niche;
+
     private String googlePlaceId;
     private String address;
 

@@ -21,7 +21,7 @@ public class Competitor {
     private String address;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "niche_id")
+    @JoinColumn(name = "niche_id", nullable = false)
     private Niche niche;
 
     private Double rating;
