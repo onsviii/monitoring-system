@@ -18,7 +18,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/analyses/{sessionId}/messages")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('BUSINESS')")
-public class DialogueController {
+public class ChatController {
     private final ChatService chatService;
 
     /**
