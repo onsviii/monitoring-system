@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ua.bkr.monitor.dto.ErrorResponse;
 import ua.bkr.monitor.exception.AccessDeniedException;
+import ua.bkr.monitor.exception.DataCollectionException;
 import ua.bkr.monitor.exception.ResourceNotFoundException;
 
 import java.util.stream.Collectors;
@@ -23,6 +24,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleForbidden(AccessDeniedException ex) {
         return ResponseEntity.status(403)
                 .body(new ErrorResponse(403, ex.getMessage()));
+    }
+
+    @ExceptionHandler(DataCollectionException.class)
+    public ResponseEntity<ErrorResponse> handleDataCollectionException(DataCollectionException ex) {
+        return ResponseEntity.status(503)
+                .body(new ErrorResponse(503, ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

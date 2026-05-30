@@ -13,6 +13,7 @@ import ua.bkr.monitor.provider.GooglePlacesClient.PlaceInfo;
 import ua.bkr.monitor.provider.mapper.GooglePlacesMapper;
 import ua.bkr.monitor.repository.NicheRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -47,9 +48,15 @@ public class PlacesService {
     /**
      * Вільний пошук закладу за текстовим запитом (для профілю).
      */
-    public PlaceSearchResponse search(String query, Location location) {
+    public PlaceSearchResponse search(String query, String nicheCode, Location location) {
         log.info("Executing free search for query: {}", query);
-        List<PlaceInfo> places = googlePlacesClient.search(query, location);
+
+        Niche niche = nicheRepository.findByCode(nicheCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Niche not supported: " + nicheCode));
+
+        List<String> googleTypes = new ArrayList<>(niche.getGoogleTypes());
+        List<PlaceInfo> places = googlePlacesClient.search(query, googleTypes, location);
+
         return googlePlacesMapper.toPlaceSearchResponse(places);
     }
 }

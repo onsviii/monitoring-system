@@ -85,11 +85,15 @@ public class GooglePlacesClient {
     /**
      * Вільний пошук закладу за назвою (наприклад, під час реєстрації власного бізнесу).
      */
-    public List<PlaceInfo> search(String query, Location location) {
+    public List<PlaceInfo> search(String query, List<String> googleTypes, Location location) {
         Map<String, Object> body = new HashMap<>();
         body.put("textQuery", query);
         body.put("languageCode", "uk");
         body.put("maxResultCount", 5);
+
+        if (googleTypes != null && !googleTypes.isEmpty()) {
+            body.put("includedType", googleTypes.get(0));
+        }
 
         // М'яке підтягування результатів ближче до користувача
         if (location.latitude() != null && location.longitude() != null) {
@@ -105,8 +109,10 @@ public class GooglePlacesClient {
         try {
             return executeSearchRequest(body);
         } catch (Exception e) {
-            log.error("Failed to execute free search for query: {}", query);
-            throw new RuntimeException("Failed to search places", e);
+            String errorMsg = "Failed to execute free search for query:\n%s".formatted(query);
+            CollectionErrorType type = CollectionErrorType.SEARCH_FAILED;
+            logError(null, type, errorMsg);
+            throw new DataCollectionException(type, null, errorMsg);
         }
     }
 
