@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+/* Prevent black focus outlines on SVG and Recharts coordinates / elements when clicked */
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-surface,
+.recharts-surface *,
+.recharts-legend-item,
+.recharts-legend-item *,
+svg,
+svg *,
+rect,
+path,
+circle,
+g,
+text {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+}

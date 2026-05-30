@@ -1,0 +1,6 @@
+{
+  "name": "Competitor Intelligence Monitor",
+  "description": "A single-page application for competitor intelligence monitoring with ML-driven analysis and AI Act compliant reporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
