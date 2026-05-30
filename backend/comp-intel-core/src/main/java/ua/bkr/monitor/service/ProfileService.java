@@ -10,8 +10,10 @@ import ua.bkr.monitor.dto.CreateProfileRequest;
 import ua.bkr.monitor.dto.ProfileResponse;
 import ua.bkr.monitor.exception.ResourceNotFoundException;
 import ua.bkr.monitor.mapper.UserProfileMapper;
+import ua.bkr.monitor.model.Niche;
 import ua.bkr.monitor.model.UserProfile;
 import ua.bkr.monitor.model.enums.Role;
+import ua.bkr.monitor.repository.NicheRepository;
 import ua.bkr.monitor.repository.UserProfileRepository;
 
 import java.util.Map;
@@ -21,12 +23,16 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ProfileService {
     private final UserProfileRepository userProfileRepository;
+    private final NicheRepository nicheRepository;
     private final FirebaseAuth firebaseAuth;
     private final UserProfileMapper userProfileMapper;
 
     @Transactional
     public ProfileResponse create(String userId, CreateProfileRequest request) {
-        UserProfile profile = userProfileMapper.toEntity(request, userId);
+        Niche niche = nicheRepository.findByCode(request.nicheCode())
+                .orElseThrow(() -> new ResourceNotFoundException("Niche not supported: " + request.nicheCode()));
+
+        UserProfile profile = userProfileMapper.toEntity(request, userId, niche);
         userProfileRepository.save(profile);
         setFirebaseRoleClaim(userId, Role.BUSINESS);
 
