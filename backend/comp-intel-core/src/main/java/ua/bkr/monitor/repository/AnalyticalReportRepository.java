@@ -6,7 +6,7 @@ import ua.bkr.monitor.model.AnalyticalReport;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface AnalyticalReportRepository extends JpaRepository<AnalyticalReport, Long> {
+public interface AnalyticalReportRepository extends JpaRepository<AnalyticalReport, UUID> {
 
     Optional<AnalyticalReport> findBySessionId(UUID sessionId);
 }
