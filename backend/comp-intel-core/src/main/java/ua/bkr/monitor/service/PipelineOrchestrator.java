@@ -10,9 +10,11 @@ import ua.bkr.monitor.AnalysisCreatedEvent;
 import ua.bkr.monitor.dto.AggregatedStatistics;
 import ua.bkr.monitor.dto.CreateAnalysisRequest;
 import ua.bkr.monitor.exception.DataCollectionException;
+import ua.bkr.monitor.exception.ResourceNotFoundException;
 import ua.bkr.monitor.model.*;
 import ua.bkr.monitor.model.enums.AnalysisStage;
-import ua.bkr.monitor.model.enums.Aspect;
+import ua.bkr.monitor.model.enums.CollectionErrorType;
+import ua.bkr.monitor.model.enums.SessionStatus;
 import ua.bkr.monitor.model.record.ExtractedCharacteristic;
 import ua.bkr.monitor.model.record.GeneratedRecommendation;
 import ua.bkr.monitor.model.record.IndexedReview;
@@ -28,33 +30,29 @@ import java.util.stream.IntStream;
 
 /**
  * Оркестратор аналітичного конвеєра.
- *
  * COLLECTING_DATA → ANONYMIZING → CLASSIFYING → EXTRACTING_CHARACTERISTICS → GENERATING_REPORT → COMPLETED
- *
  * Кожен етап зберігає проміжні результати в БД перед переходом далі
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PipelineOrchestrator {
-
     private final AnalysisSessionRepository sessionRepository;
     private final CompetitorRepository competitorRepository;
     private final ReviewRepository reviewRepository;
     private final AspectSentimentRepository aspectSentimentRepository;
-    private final AspectCategoryRepository aspectCategoryRepository;
     private final FreeCharacteristicRepository freeCharacteristicRepository;
-    private final CharacteristicSourceRepository characteristicSourceRepository;
-    private final AnalyticalReportRepository analyticalReportRepository;
-    private final RecommendationRepository recommendationRepository;
-    private final RecommendationSourceRepository recommendationSourceRepository;
-    private final CollectionErrorLogRepository collectionErrorLogRepository;
-    private final NicheRepository nicheRepository;
-
     private final StatisticsAggregator statisticsAggregator;
     private final GooglePlacesClient googlePlacesClient;
     private final MlServiceClient mlServiceClient;
     private final LlmAnalysisService llmAnalysisService;
+    private final CollectionErrorLogRepository errorLogRepository;
+    private final AnalyticalReportRepository reportRepository;
+    private final AspectCategoryRepository aspectCategoryRepository;
+    private final CharacteristicSourceRepository characteristicSourceRepository;
+    private final CollectionErrorLogRepository collectionErrorLogRepository;
+    private final RecommendationRepository recommendationRepository;
+    private final RecommendationSourceRepository recommendationSourceRepository;
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -64,261 +62,323 @@ public class PipelineOrchestrator {
 
     @Async
     public void runAsync(UUID sessionId, CreateAnalysisRequest request) {
+        AnalysisSession session = sessionRepository.findById(sessionId).orElseThrow();
+        session.setStatus(SessionStatus.RUNNING);
+        session.setStage(AnalysisStage.COLLECTING_DATA);
+        sessionRepository.save(session);
+
         try {
-            updateStatus(sessionId, AnalysisStage.COLLECTING_DATA);
-            Map<Competitor, List<GooglePlacesClient.RawReview>> rawData = collectData(sessionId, request);
-
-            updateStatus(sessionId, AnalysisStage.ANONYMIZING);
-            Map<Competitor, List<Review>> savedReviews = anonymizeAndPersist(sessionId, rawData);
-
-            updateStatus(sessionId, AnalysisStage.CLASSIFYING);
-            classifyAndPersist(savedReviews);
-
-            updateStatus(sessionId, AnalysisStage.EXTRACTING_CHARACTERISTICS);
-            List<ExtractedCharacteristic> allCharacteristics = extractAndPersistCharacteristics(sessionId);
-
-            updateStatus(sessionId, AnalysisStage.GENERATING_REPORT);
-            generateAndPersistReport(sessionId, request, allCharacteristics);
-
-            updateStatus(sessionId, AnalysisStage.COMPLETED);
-            log.info("Pipeline completed successfully for session {}", sessionId);
-
-        } catch (Exception e) {
-            log.error("Pipeline failed for session {}: {}", sessionId, e.getMessage(), e);
-            updateStatus(sessionId, AnalysisStage.FAILED);
-        }
-    }
-
-    private Map<Competitor, List<GooglePlacesClient.RawReview>> collectData(
-            UUID sessionId, CreateAnalysisRequest request) {
-
-        AnalysisSession session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Session not found: " + sessionId));
-
-        Niche niche = nicheRepository.findByCode(request.nicheCode())
-                .orElseThrow(() -> new RuntimeException("Niche not found: " + request.nicheCode()));
-
-        List<String> googleTypes = new ArrayList<>(niche.getGoogleTypes());
-        int maxCount = request.maxCompetitors() != null ? request.maxCompetitors() : 10;
-
-        List<GooglePlacesClient.PlaceInfo> places = googlePlacesClient.searchCompetitors(
-                googleTypes, request.location(), request.radiusKm().intValue(), maxCount, sessionId);
-
-        if (request.selectedPlaceIds() != null && !request.selectedPlaceIds().isEmpty()) {
-            Set<String> selected = new HashSet<>(request.selectedPlaceIds());
-            places = places.stream().filter(p -> selected.contains(p.placeId())).toList();
-        }
-
-        log.info("Collecting reviews for {} competitors in session {}", places.size(), sessionId);
-
-        Map<Competitor, List<GooglePlacesClient.RawReview>> result = new LinkedHashMap<>();
-        for (GooglePlacesClient.PlaceInfo place : places) {
-            Competitor competitor = new Competitor();
-            competitor.setExternalApiId(place.placeId());
-            competitor.setName(place.name());
-            competitor.setAddress(place.address());
-            competitor.setRating(place.rating());
-            List<GooglePlacesClient.RawReview> reviews = fetchReviewsSafely(place.placeId(), sessionId);
-            result.put(competitor, reviews);
-            competitor.setNiche(niche);
-            competitor.setSession(session);
-            competitorRepository.save(competitor);
-
-            log.debug("Competitor '{}': {} reviews", place.name(), reviews.size());
-        }
-
-        return result;
-    }
-
-    private List<GooglePlacesClient.RawReview> fetchReviewsSafely(String placeId, UUID sessionId) {
-        try {
-            return googlePlacesClient.fetchReviews(placeId, sessionId);
+            runFromCollecting(session, request);
         } catch (DataCollectionException e) {
-            log.warn("Skipping reviews for place {} (session {}): {}", placeId, sessionId, e.getMessage());
-            persistCollectionError(sessionId, e.getErrorType().name(), e.getMessage());
-            return List.of();
+            failSession(session, e.getErrorType().name(), e.getMessage());
+        } catch (Exception e) {
+            failSession(session, "UNKNOWN", e.getMessage());
         }
     }
 
-    private Map<Competitor, List<Review>> anonymizeAndPersist(
-            UUID sessionId, Map<Competitor, List<GooglePlacesClient.RawReview>> rawData) {
+    @Async
+    public void resumeAsync(UUID sessionId) {
+        AnalysisSession session = sessionRepository.findById(sessionId).orElseThrow();
+        session.setStatus(SessionStatus.RUNNING);
+        sessionRepository.save(session);
 
-        List<Competitor> competitorOrder = new ArrayList<>();
-        List<List<GooglePlacesClient.RawReview>> filteredPerCompetitor = new ArrayList<>();
-        List<String> allTexts = new ArrayList<>();
+        try {
+            switch (session.getStage()) {
+                case COLLECTING_DATA -> runFromCollecting(session);
+                case ANONYMIZING     -> runFromAnonymizing(session);
+                case CLASSIFYING     -> runFromClassifying(session);
+                case EXTRACTING_CHARACTERISTICS -> runFromExtracting(session);
+                case GENERATING_REPORT -> runFromGenerating(session);
+            }
+        } catch (DataCollectionException e) {
+            failSession(session, e.getErrorType().name(), e.getMessage());
+        } catch (Exception e) {
+            failSession(session, "UNKNOWN", e.getMessage());
+        }
+    }
 
-        for (Map.Entry<Competitor, List<GooglePlacesClient.RawReview>> entry : rawData.entrySet()) {
-            List<GooglePlacesClient.RawReview> filtered = entry.getValue().stream()
-                    .filter(r -> r.text() != null && !r.text().isBlank())
-                    .toList();
-            competitorOrder.add(entry.getKey());
-            filteredPerCompetitor.add(filtered);
-            filtered.forEach(r -> allTexts.add(r.text()));
+    private void runFromCollecting(AnalysisSession session, CreateAnalysisRequest request) {
+        updateStage(session, AnalysisStage.COLLECTING_DATA);
+
+        List<Competitor> competitors = request.selectedPlaces().stream()
+                .map(place -> mapToCompetitor(session, place))
+                .toList();
+
+        competitorRepository.saveAll(competitors);
+        markOwnBusiness(session, competitors);
+
+        Map<UUID, List<GooglePlacesClient.RawReview>> rawReviews =
+                fetchAllReviews(competitors, session.getId());
+
+        runAnonymization(session, competitors, rawReviews);
+    }
+
+    private void runFromCollecting(AnalysisSession session) {
+        updateStage(session, AnalysisStage.COLLECTING_DATA);
+
+        List<Competitor> competitors = competitorRepository.findBySessionId(session.getId());
+
+        if (competitors.isEmpty()) {
+            throw new DataCollectionException(
+                    CollectionErrorType.SEARCH_FAILED, null,
+                    "No competitors found, please create a new analysis");
         }
 
-        if (allTexts.isEmpty()) {
-            log.warn("No review texts collected for session {} — skipping anonymization", sessionId);
-            return Map.of();
-        }
+        Map<UUID, List<GooglePlacesClient.RawReview>> rawReviews =
+                fetchAllReviews(competitors, session.getId());
 
-        List<String> anonymized = mlServiceClient.anonymize(allTexts);
+        runAnonymization(session, competitors, rawReviews);
+    }
 
-        Map<Competitor, List<Review>> result = new LinkedHashMap<>();
-        int offset = 0;
+    private Competitor mapToCompetitor(
+            AnalysisSession session, CreateAnalysisRequest.SelectedPlace place) {
 
-        for (int i = 0; i < competitorOrder.size(); i++) {
-            Competitor competitor = competitorOrder.get(i);
-            List<GooglePlacesClient.RawReview> raws = filteredPerCompetitor.get(i);
-            List<Review> saved = new ArrayList<>();
+        Competitor c = new Competitor();
+        c.setSession(session);
+        c.setNiche(session.getBusinessNiche());
+        c.setExternalApiId(place.placeId());
+        c.setName(place.name());
+        c.setAddress(place.address());
+        c.setRating(place.rating());
+        return c;
+    }
 
-            for (int j = 0; j < raws.size(); j++) {
-                int globalIdx = offset + j;
-                if (globalIdx >= anonymized.size()) break;
+    private void runFromAnonymizing(AnalysisSession session) {
+        List<Competitor> competitors = competitorRepository.findBySessionId(session.getId());
 
+        Map<UUID, List<GooglePlacesClient.RawReview>> rawReviewsByCompetitor =
+                fetchAllReviews(competitors, session.getId());
+
+        runAnonymization(session, competitors, rawReviewsByCompetitor);
+    }
+
+    private void runFromExtracting(AnalysisSession session) {
+        List<Competitor> competitors = competitorRepository.findBySessionId(session.getId());
+        List<Review> reviews = reviewRepository.findByCompetitorSessionId(session.getId());
+
+        runCharacteristicsExtraction(session, competitors, reviews);
+    }
+
+    private void runFromGenerating(AnalysisSession session) {
+        List<UUID> competitorIds = competitorRepository.findBySessionId(session.getId())
+                .stream()
+                .map(Competitor::getId)
+                .toList();
+
+        List<ExtractedCharacteristic> characteristics =
+                freeCharacteristicRepository.findByCompetitorIdIn(competitorIds)
+                        .stream()
+                        .map(fc -> new ExtractedCharacteristic(fc.getText(), List.of()))
+                        .toList();
+
+        runReportGeneration(session, characteristics);
+    }
+
+    private void runFromClassifying(AnalysisSession session) {
+        List<Review> reviews = reviewRepository.findByCompetitorSessionId(session.getId());
+
+        runClassification(session, reviews);
+    }
+
+    private void runAnonymization(
+            AnalysisSession session, List<Competitor> competitors,
+            Map<UUID, List<GooglePlacesClient.RawReview>> rawReviews) {
+
+        updateStage(session, AnalysisStage.ANONYMIZING);
+        reviewRepository.deleteByCompetitorSessionId(session.getId());
+
+        List<Review> savedReviews = new ArrayList<>();
+
+        for (Competitor competitor : competitors) {
+            List<GooglePlacesClient.RawReview> raws =
+                    rawReviews.getOrDefault(competitor.getId(), List.of());
+
+            List<String> texts = raws.stream().map(GooglePlacesClient.RawReview::text).toList();
+            List<String> anonymized = mlServiceClient.anonymize(texts);
+
+            for (int i = 0; i < anonymized.size(); i++) {
                 Review review = new Review();
-                review.setText(anonymized.get(globalIdx));
-                review.setRating(raws.get(j).rating());
-                review.setCreatedAt(parsePublishTime(raws.get(j).publishTime()));
                 review.setCompetitor(competitor);
-                saved.add(reviewRepository.save(review));
-            }
-
-            result.put(competitor, saved);
-            offset += raws.size();
-        }
-
-        return result;
-    }
-
-    private void classifyAndPersist(Map<Competitor, List<Review>> reviewsByCompetitor) {
-        Map<Aspect, AspectCategory> categoryCache = loadAspectCategoryCache();
-
-        for (Map.Entry<Competitor, List<Review>> entry : reviewsByCompetitor.entrySet()) {
-            List<Review> reviews = entry.getValue();
-            if (reviews.isEmpty()) continue;
-
-            List<String> texts = reviews.stream().map(Review::getText).toList();
-            List<MlServiceClient.AspectClassification> classifications = mlServiceClient.classify(texts);
-
-            for (int i = 0; i < reviews.size() && i < classifications.size(); i++) {
-                Review review = reviews.get(i);
-                for (Map.Entry<Aspect, MlServiceClient.AspectResult> aspectEntry
-                        : classifications.get(i).aspects().entrySet()) {
-
-                    AspectCategory category = categoryCache.get(aspectEntry.getKey());
-                    if (category == null) {
-                        log.warn("AspectCategory not found for aspect '{}' — skipping", aspectEntry.getKey());
-                        continue;
-                    }
-
-                    MlServiceClient.AspectResult result = aspectEntry.getValue();
-                    AspectSentiment sentiment = new AspectSentiment();
-                    sentiment.setReview(review);
-                    sentiment.setCategory(category);
-                    sentiment.setPolarity(result.polarity());
-                    sentiment.setConfidenceScore(result.confidence());
-                    aspectSentimentRepository.save(sentiment);
-                }
+                review.setText(anonymized.get(i));
+                review.setRating(raws.get(i).rating());
+                review.setCreatedAt(parsePublishTime(raws.get(i).publishTime()));
+                savedReviews.add(reviewRepository.save(review));
             }
         }
+
+        runClassification(session, savedReviews);
     }
 
-    private List<ExtractedCharacteristic> extractAndPersistCharacteristics(UUID sessionId) {
-        List<Competitor> competitors = competitorRepository.findBySessionId(sessionId);
+    private void runClassification(AnalysisSession session, List<Review> reviews) {
+        updateStage(session, AnalysisStage.CLASSIFYING);
+
+        aspectSentimentRepository.deleteByReviewCompetitorSessionId(session.getId());
+
+        List<String> texts = reviews.stream().map(Review::getText).toList();
+        List<MlServiceClient.AspectClassification> results = mlServiceClient.classify(texts);
+
+        for (int i = 0; i < reviews.size(); i++) {
+            saveAspectSentiments(reviews.get(i), results.get(i));
+        }
+
+        List<Competitor> competitors = competitorRepository.findBySessionId(session.getId());
+        runCharacteristicsExtraction(session, competitors, reviews);
+    }
+
+    private void runCharacteristicsExtraction(
+            AnalysisSession session, List<Competitor> competitors, List<Review> reviews) {
+
+        updateStage(session, AnalysisStage.EXTRACTING_CHARACTERISTICS);
+        freeCharacteristicRepository.deleteByCompetitorSessionId(session.getId());
+
         List<ExtractedCharacteristic> allCharacteristics = new ArrayList<>();
 
         for (Competitor competitor : competitors) {
-            List<Review> reviews = reviewRepository.findByCompetitorId(competitor.getId());
-            if (reviews.isEmpty()) continue;
+            List<Review> compReviews = reviews.stream()
+                    .filter(r -> r.getCompetitor().getId().equals(competitor.getId()))
+                    .toList();
 
-            List<IndexedReview> indexed = IntStream.range(0, reviews.size())
-                    .mapToObj(i -> new IndexedReview(i, reviews.get(i).getText()))
+            List<IndexedReview> indexed = IntStream.range(0, compReviews.size())
+                    .mapToObj(i -> new IndexedReview(i, compReviews.get(i).getText()))
                     .toList();
 
             List<ExtractedCharacteristic> characteristics =
-                    llmAnalysisService.extractCharacteristics(competitor.getName(), indexed, sessionId);
+                    llmAnalysisService.extractCharacteristics(
+                            competitor.getName(), indexed, session.getId());
 
-            for (ExtractedCharacteristic ec : characteristics) {
-                FreeCharacteristic fc = new FreeCharacteristic();
-                fc.setText(ec.text());
-                fc.setCompetitor(competitor);
-                FreeCharacteristic saved = freeCharacteristicRepository.save(fc);
+            allCharacteristics.addAll(characteristics);
 
-                for (int idx : ec.sourceIndices()) {
-                    if (idx >= 0 && idx < reviews.size()) {
-                        characteristicSourceRepository.save(new CharacteristicSource(saved, reviews.get(idx)));
-                    }
-                }
-
-                allCharacteristics.add(ec);
-            }
-
-            log.debug("Extracted {} characteristics for competitor '{}'",
-                    characteristics.size(), competitor.getName());
+            saveCharacteristics(competitor, compReviews, characteristics);
         }
 
-        return allCharacteristics;
+        runReportGeneration(session, allCharacteristics);
     }
 
-    private void generateAndPersistReport(
-            UUID sessionId, CreateAnalysisRequest request,
-            List<ExtractedCharacteristic> characteristics) {
+    private void markOwnBusiness(AnalysisSession session, List<Competitor> competitors) {
+        String userPlaceId = session.getUser().getGooglePlaceId();
+        if (userPlaceId == null) return;
 
-        AnalysisSession session = sessionRepository.findWithNicheById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Session not found: " + sessionId));
+        competitors.stream()
+                .filter(c -> userPlaceId.equals(c.getExternalApiId()))
+                .findFirst()
+                .ifPresent(c -> {
+                    c.setOwnBusiness(true);
+                    competitorRepository.save(c);
+                });
+    }
+
+    private void saveAspectSentiments(Review review, MlServiceClient.AspectClassification result) {
+        result.aspects().forEach((name, aspectResult) -> {
+            AspectCategory category = aspectCategoryRepository.findByName(name)
+                    .orElseThrow(() -> new ResourceNotFoundException("Aspect not found: " + name));
+
+            AspectSentiment sentiment = new AspectSentiment();
+            sentiment.setReview(review);
+            sentiment.setCategory(category);
+            sentiment.setPolarity(aspectResult.polarity());
+            sentiment.setConfidenceScore(aspectResult.confidence());
+            aspectSentimentRepository.save(sentiment);
+        });
+    }
+
+    private void saveCharacteristics(Competitor competitor,
+                                     List<Review> compReviews,
+                                     List<ExtractedCharacteristic> characteristics) {
+        for (ExtractedCharacteristic ec : characteristics) {
+            FreeCharacteristic fc = new FreeCharacteristic();
+            fc.setCompetitor(competitor);
+            fc.setText(ec.text());
+            fc = freeCharacteristicRepository.save(fc);
+
+            for (Integer idx : ec.sourceIndices()) {
+                if (idx >= 0 && idx < compReviews.size()) {
+                    CharacteristicSource source = new CharacteristicSource();
+                    source.setCharacteristic(fc);
+                    source.setReview(compReviews.get(idx));
+                    characteristicSourceRepository.save(source);
+                }
+            }
+        }
+
+    }
+
+    private void runReportGeneration(
+            AnalysisSession session, List<ExtractedCharacteristic> characteristics) {
+
+        updateStage(session, AnalysisStage.GENERATING_REPORT);
+        reportRepository.deleteBySessionId(session.getId());
+
+        UUID sessionId = session.getId();
 
         AggregatedStatistics stats = statisticsAggregator.aggregate(sessionId);
 
         List<Review> allReviews = reviewRepository.findByCompetitorSessionId(sessionId);
+
         List<IndexedReview> indexedAll = IntStream.range(0, allReviews.size())
                 .mapToObj(i -> new IndexedReview(i, allReviews.get(i).getText()))
                 .toList();
 
         List<GeneratedRecommendation> recommendations = llmAnalysisService.generateRecommendations(
-                session.getBusinessNiche().getDisplayName(),
-                stats, characteristics, indexedAll, sessionId
-        );
+                session.getBusinessNiche().getDisplayName(), stats, characteristics,
+                indexedAll, sessionId);
 
         AnalyticalReport report = new AnalyticalReport();
-        report.setName(request.reportName());
+        report.setName(session.getReportName());
         report.setSession(session);
         report.setAggregatedStatistics(stats);
         report.setGeneratedAt(LocalDateTime.now());
         report.setAiMarked(true);
-        AnalyticalReport savedReport = analyticalReportRepository.save(report);
+        report = reportRepository.save(report);
 
-        for (GeneratedRecommendation gr : recommendations) {
-            Recommendation rec = new Recommendation();
-            rec.setText(gr.text());
-            rec.setReport(savedReport);
-            Recommendation savedRec = recommendationRepository.save(rec);
+        for (GeneratedRecommendation rec : recommendations) {
+            Recommendation entity = new Recommendation();
+            entity.setReport(report);
+            entity.setText(rec.text());
+            entity = recommendationRepository.save(entity);
 
-            for (int idx : gr.sourceIndices()) {
+            for (Integer idx : rec.sourceIndices()) {
                 if (idx >= 0 && idx < allReviews.size()) {
-                    recommendationSourceRepository.save(new RecommendationSource(savedRec, allReviews.get(idx)));
+                    RecommendationSource source = new RecommendationSource();
+                    source.setRecommendation(entity);
+                    source.setReview(allReviews.get(idx));
+                    recommendationSourceRepository.save(source);
                 }
             }
         }
 
-        log.info("Report '{}' generated with {} recommendations for session {}",
-                request.reportName(), recommendations.size(), sessionId);
-    }
-
-    private void updateStatus(UUID sessionId, AnalysisStage status) {
-        AnalysisSession session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Session not found: " + sessionId));
-        session.setStatus(status);
+        session.setStatus(SessionStatus.COMPLETED);
+        session.setStage(null);
         sessionRepository.save(session);
-        log.info("Session {} → {}", sessionId, status);
     }
 
-    private Map<Aspect, AspectCategory> loadAspectCategoryCache() {
-        Map<Aspect, AspectCategory> cache = new EnumMap<>(Aspect.class);
-        for (Aspect aspect : Aspect.values()) {
-            aspectCategoryRepository.findByName(aspect)
-                    .ifPresent(cat -> cache.put(aspect, cat));
+    private Map<UUID, List<GooglePlacesClient.RawReview>> fetchAllReviews(
+            List<Competitor> competitors, UUID sessionId) {
+        Map<UUID, List<GooglePlacesClient.RawReview>> result = new HashMap<>();
+        for (Competitor c : competitors) {
+            try {
+                result.put(c.getId(), googlePlacesClient.fetchReviews(c.getExternalApiId(), sessionId));
+            } catch (DataCollectionException e) {
+                persistCollectionError(sessionId, e.getErrorType().name(), e.getMessage());
+            }
         }
-        return cache;
+        return result;
+    }
+
+    private void updateStage(AnalysisSession session, AnalysisStage stage) {
+        session.setStage(stage);
+        sessionRepository.save(session);
+    }
+
+    private void failSession(AnalysisSession session, String errorType, String message) {
+        session.setStatus(SessionStatus.FAILED);
+        sessionRepository.save(session);
+
+        CollectionErrorLog error = new CollectionErrorLog();
+        error.setSession(session);
+        error.setErrorType(errorType);
+        error.setDescription(message);
+        error.setTimestamp(LocalDateTime.now());
+        errorLogRepository.save(error);
     }
 
     private LocalDateTime parsePublishTime(String publishTime) {

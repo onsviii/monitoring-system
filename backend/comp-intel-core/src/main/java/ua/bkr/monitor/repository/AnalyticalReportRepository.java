@@ -7,6 +7,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface AnalyticalReportRepository extends JpaRepository<AnalyticalReport, UUID> {
-
     Optional<AnalyticalReport> findBySessionId(UUID sessionId);
+    void deleteBySessionId(UUID sessionId);
 }

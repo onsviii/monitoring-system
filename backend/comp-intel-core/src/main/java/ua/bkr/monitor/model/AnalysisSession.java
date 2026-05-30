@@ -31,6 +31,9 @@ public class AnalysisSession {
     @JoinColumn(name = "niche_id", nullable = false)
     private Niche businessNiche;
 
+    @Column(nullable = false)
+    private String reportName;
+
     @Embedded
     private Location location;
 

@@ -10,4 +10,5 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     List<Review> findByCompetitorId(UUID competitorId);
     List<Review> findByCompetitorIdIn(List<UUID> competitorIds);
     List<Review> findByCompetitorSessionId(UUID sessionId);
+    void deleteByCompetitorSessionId(UUID sessionId);
 }

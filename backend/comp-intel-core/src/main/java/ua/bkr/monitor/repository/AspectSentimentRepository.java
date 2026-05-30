@@ -13,4 +13,5 @@ public interface AspectSentimentRepository extends JpaRepository<AspectSentiment
     List<AspectSentiment> findByReviewCompetitorIdIn(List<UUID> competitorIds);
     List<AspectSentiment> findByReviewCompetitorId(UUID competitorId);
     List<AspectSentiment> findByReviewCompetitorIdAndCategoryName(UUID reviewCompetitorId, Aspect categoryName);
+    void deleteByReviewCompetitorSessionId(UUID sessionId);
 }

@@ -20,8 +20,8 @@ public interface AnalysisSessionMapper {
     @Mapping(target = "businessNiche", source = "niche")
     @Mapping(target = "location", source = "request.location")
     @Mapping(target = "radiusKm", source = "request.radiusKm")
-    @Mapping(target = "name", source = "request.reportName")
-    @Mapping(target = "status", expression = "java(AnalysisStatus.COLLECTING_DATA)")
+    @Mapping(target = "reportName", source = "request.reportName")
+    @Mapping(target = "status", expression = "java(SessionStatus.PENDING)")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "llmLogs", ignore = true)
@@ -29,6 +29,7 @@ public interface AnalysisSessionMapper {
     @Mapping(target = "competitors", ignore = true)
     @Mapping(target = "analyticalReports", ignore = true)
     @Mapping(target = "chatMessages", ignore = true)
+    @Mapping(target = "stage", expression = "java(AnalysisStage.COLLECTING_DATA)")
     AnalysisSession toEntity(CreateAnalysisRequest request, UserProfile user, Niche niche);
 
     AnalysisStatusResponse toStatusResponse(AnalysisSession session);

@@ -41,7 +41,6 @@ public interface GooglePlacesMapper {
     @Mapping(source = "placeId", target = "googlePlaceId")
     PlaceCandidate toPlaceCandidate(PlaceInfo placeInfo);
 
-
     default List<RawReview> toRawReviewsFiltered(List<GoogleReviewDto> reviews) {
         if (reviews == null) {
             return List.of();

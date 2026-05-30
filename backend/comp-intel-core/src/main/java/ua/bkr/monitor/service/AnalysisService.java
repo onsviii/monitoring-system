@@ -15,6 +15,7 @@ import ua.bkr.monitor.model.AnalysisSession;
 import ua.bkr.monitor.model.Niche;
 import ua.bkr.monitor.model.UserProfile;
 import ua.bkr.monitor.model.enums.AnalysisStage;
+import ua.bkr.monitor.model.enums.SessionStatus;
 import ua.bkr.monitor.repository.AnalysisSessionRepository;
 import ua.bkr.monitor.repository.NicheRepository;
 import ua.bkr.monitor.repository.UserProfileRepository;
@@ -66,13 +67,19 @@ public class AnalysisService {
     @Transactional(readOnly = true)
     public AnalysisStatusResponse getStatus(String userId, UUID sessionId) {
         AnalysisSession session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
 
         if (!session.getUser().getId().equals(userId)) {
             throw new RuntimeException("Access denied to session: " + sessionId);
         }
 
-        return new AnalysisStatusResponse(session.getId(), session.getStatus());
+        return new AnalysisStatusResponse(
+                session.getId(),
+                session.getStage(),
+                AnalysisSessionMapper.calculateProgress(session.getStage()),
+                session.getStatus(),
+                session.getCompetitors().size()
+        );
     }
 
     @Transactional
@@ -80,12 +87,12 @@ public class AnalysisService {
         AnalysisSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
 
-        if (session.getStatus() == AnalysisStage.FAILED) {
-            session.setStatus(AnalysisStage.);
+        if (session.getStatus() == SessionStatus.FAILED) {
+            session.setStatus(SessionStatus.PENDING);
             sessionRepository.save(session);
             pipelineOrchestrator.resumeAsync(sessionId);
         }
 
-        return new AnalysisStatusResponse(session.getId(), session.getStatus());
+        return sessionMapper.toStatusResponse(session);
     }
 }

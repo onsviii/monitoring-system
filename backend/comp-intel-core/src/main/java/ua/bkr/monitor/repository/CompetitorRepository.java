@@ -7,6 +7,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface CompetitorRepository extends JpaRepository<Competitor, UUID> {
-
     List<Competitor> findBySessionId(UUID sessionId);
+    void deleteBySessionId(UUID sessionId);
 }
