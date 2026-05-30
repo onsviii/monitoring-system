@@ -3,7 +3,6 @@ package ua.bkr.monitor.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.ObjectMapper;
 import ua.bkr.monitor.dto.AggregatedStatistics;
 import ua.bkr.monitor.dto.MessageResponse;
 import ua.bkr.monitor.dto.SendMessageRequest;
@@ -34,7 +33,6 @@ public class ChatService {
     private final ReportContextService reportContextService;
     private final LlmAnalysisService llmAnalysisService;
     private final ChatMessageMapper messageMapper;
-    private final ObjectMapper objectMapper;
 
     @Transactional
     public MessageResponse sendMessage(String userId, UUID sessionId, SendMessageRequest request) {
@@ -48,7 +46,7 @@ public class ChatService {
                 .orElseThrow(() -> new RuntimeException("Report not found for session: " + sessionId));
 
         List<Competitor> competitors = competitorRepository.findBySessionId(sessionId);
-        AggregatedStatistics stats = objectMapper.readValue(report.getAggregatedStatistics(), AggregatedStatistics.class);
+        AggregatedStatistics stats = report.getAggregatedStatistics();
         String reportContext = reportContextService.buildReportContext(report, competitors, stats);
 
         String llmResponse = llmAnalysisService.chat(
