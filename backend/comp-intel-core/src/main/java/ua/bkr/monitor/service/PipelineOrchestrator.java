@@ -11,7 +11,7 @@ import ua.bkr.monitor.dto.AggregatedStatistics;
 import ua.bkr.monitor.dto.CreateAnalysisRequest;
 import ua.bkr.monitor.exception.DataCollectionException;
 import ua.bkr.monitor.model.*;
-import ua.bkr.monitor.model.enums.AnalysisStatus;
+import ua.bkr.monitor.model.enums.AnalysisStage;
 import ua.bkr.monitor.model.enums.Aspect;
 import ua.bkr.monitor.model.record.ExtractedCharacteristic;
 import ua.bkr.monitor.model.record.GeneratedRecommendation;
@@ -65,27 +65,27 @@ public class PipelineOrchestrator {
     @Async
     public void runAsync(UUID sessionId, CreateAnalysisRequest request) {
         try {
-            updateStatus(sessionId, AnalysisStatus.COLLECTING_DATA);
+            updateStatus(sessionId, AnalysisStage.COLLECTING_DATA);
             Map<Competitor, List<GooglePlacesClient.RawReview>> rawData = collectData(sessionId, request);
 
-            updateStatus(sessionId, AnalysisStatus.ANONYMIZING);
+            updateStatus(sessionId, AnalysisStage.ANONYMIZING);
             Map<Competitor, List<Review>> savedReviews = anonymizeAndPersist(sessionId, rawData);
 
-            updateStatus(sessionId, AnalysisStatus.CLASSIFYING);
+            updateStatus(sessionId, AnalysisStage.CLASSIFYING);
             classifyAndPersist(savedReviews);
 
-            updateStatus(sessionId, AnalysisStatus.EXTRACTING_CHARACTERISTICS);
+            updateStatus(sessionId, AnalysisStage.EXTRACTING_CHARACTERISTICS);
             List<ExtractedCharacteristic> allCharacteristics = extractAndPersistCharacteristics(sessionId);
 
-            updateStatus(sessionId, AnalysisStatus.GENERATING_REPORT);
+            updateStatus(sessionId, AnalysisStage.GENERATING_REPORT);
             generateAndPersistReport(sessionId, request, allCharacteristics);
 
-            updateStatus(sessionId, AnalysisStatus.COMPLETED);
+            updateStatus(sessionId, AnalysisStage.COMPLETED);
             log.info("Pipeline completed successfully for session {}", sessionId);
 
         } catch (Exception e) {
             log.error("Pipeline failed for session {}: {}", sessionId, e.getMessage(), e);
-            updateStatus(sessionId, AnalysisStatus.FAILED);
+            updateStatus(sessionId, AnalysisStage.FAILED);
         }
     }
 
@@ -304,7 +304,7 @@ public class PipelineOrchestrator {
                 request.reportName(), recommendations.size(), sessionId);
     }
 
-    private void updateStatus(UUID sessionId, AnalysisStatus status) {
+    private void updateStatus(UUID sessionId, AnalysisStage status) {
         AnalysisSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found: " + sessionId));
         session.setStatus(status);

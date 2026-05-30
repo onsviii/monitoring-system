@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import ua.bkr.monitor.model.enums.AnalysisStatus;
+import ua.bkr.monitor.model.enums.AnalysisStage;
 import ua.bkr.monitor.model.record.Location;
 
 import java.time.LocalDateTime;
@@ -36,7 +36,7 @@ public class AnalysisSession {
     private Double radiusKm;
 
     @Enumerated(EnumType.STRING)
-    private AnalysisStatus status;
+    private AnalysisStage status;
 
     @CreationTimestamp
     @Column(nullable = false)

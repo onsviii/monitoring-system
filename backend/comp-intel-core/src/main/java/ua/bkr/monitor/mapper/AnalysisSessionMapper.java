@@ -7,9 +7,9 @@ import ua.bkr.monitor.dto.AnalysisStatusResponse;
 import ua.bkr.monitor.model.AnalysisSession;
 import ua.bkr.monitor.model.Niche;
 import ua.bkr.monitor.model.UserProfile;
-import ua.bkr.monitor.model.enums.AnalysisStatus;
+import ua.bkr.monitor.model.enums.AnalysisStage;
 
-@Mapper(componentModel = "spring", imports = {AnalysisStatus.class})
+@Mapper(componentModel = "spring", imports = {AnalysisStage.class})
 public interface AnalysisSessionMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "user", source = "user")
