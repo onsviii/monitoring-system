@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import ua.bkr.monitor.model.enums.Aspect;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,7 +22,7 @@ public class AspectCategory {
     private UUID id;
 
     @Column(nullable = false)
-    private String name;
+    private Aspect name;
 
     @Column(columnDefinition = "TEXT")
     private String description;
