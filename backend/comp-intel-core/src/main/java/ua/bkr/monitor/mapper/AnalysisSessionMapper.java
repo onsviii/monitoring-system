@@ -32,6 +32,8 @@ public interface AnalysisSessionMapper {
     @Mapping(target = "stage", expression = "java(AnalysisStage.COLLECTING_DATA)")
     AnalysisSession toEntity(CreateAnalysisRequest request, UserProfile user, Niche niche);
 
+    @Mapping(target = "progress", ignore = true)
+    @Mapping(target = "competitorsCount", ignore = true)
     AnalysisStatusResponse toStatusResponse(AnalysisSession session);
 
     @AfterMapping
