@@ -47,7 +47,7 @@ public class GooglePlacesClient {
      * Пошук конкурентів за списком типів Google у жорсткому радіусі.
      */
     public List<PlaceInfo> searchCompetitors(
-            List<String> googleTypes, Location location, int radiusKm,
+            List<String> googleTypes, Location location, double radiusKm,
             int maxResults, UUID sessionId) {
 
         if (googleTypes == null || googleTypes.isEmpty()) {

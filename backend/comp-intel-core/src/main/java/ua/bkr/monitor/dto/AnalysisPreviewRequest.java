@@ -1,9 +1,6 @@
 package ua.bkr.monitor.dto;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import ua.bkr.monitor.model.record.Location;
 
 public record AnalysisPreviewRequest(
@@ -13,9 +10,9 @@ public record AnalysisPreviewRequest(
         @NotNull(message = "Location coordinates are required")
         Location location,
 
-        @Min(value = 1, message = "Radius must be at least 1 km")
-        @Max(value = 50, message = "Radius cannot exceed 50 km")
-        int radiusKm,
+        @DecimalMin(value = "0.5", message = "Radius must be at least 0.5 km")
+        @DecimalMax(value = "10.0", message = "Radius cannot exceed 10 km")
+        double radiusKm,
 
         @Min(value = 1, message = "At least 1 competitor")
         @Max(value = 10, message = "Max 10 competitors allowed")

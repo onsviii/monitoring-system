@@ -28,7 +28,7 @@ public class PlacesService {
      * Пошук конкурентів на основі конфігурації ніші з бази даних.
      */
     @Transactional(readOnly = true)
-    public PlaceSearchResponse findCompetitors(String nicheCode, Location location, int radiusKm, int maxResults) {
+    public PlaceSearchResponse findCompetitors(String nicheCode, Location location, double radiusKm, int maxResults) {
         log.info("Fetching google types for niche code: {}", nicheCode);
 
         Niche niche = nicheRepository.findByCode(nicheCode)
