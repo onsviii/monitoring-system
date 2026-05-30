@@ -52,6 +52,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(List.of("http://localhost:3000")); // TODO: замінити на продакшн URL
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("X-Refresh-Token"));
         config.setAllowCredentials(true);
         return new UrlBasedCorsConfigurationSource() {{
             registerCorsConfiguration("/**", config);

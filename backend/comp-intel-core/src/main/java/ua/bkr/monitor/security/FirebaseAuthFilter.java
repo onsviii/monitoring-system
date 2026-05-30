@@ -19,7 +19,6 @@ import ua.bkr.monitor.model.enums.Role;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Component
@@ -55,7 +54,9 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
 
             if (role == null) {
                 role = DEFAULT_ROLE;
-                assignDefaultRoleAsync(uid);
+                if (assignDefaultRole(uid)) {
+                    response.setHeader("X-Refresh-Token", "true");
+                }
             }
 
             UsernamePasswordAuthenticationToken authentication =
@@ -84,14 +85,14 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
         return null;
     }
 
-    private void assignDefaultRoleAsync(String uid) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                firebaseAuth.setCustomUserClaims(uid, Map.of("role", DEFAULT_ROLE));
-                log.info("Default role '{}' assigned to uid={}", DEFAULT_ROLE, uid);
-            } catch (FirebaseAuthException e) {
-                log.error("Failed to assign default role to uid={}: {}", uid, e.getMessage());
-            }
-        });
+    private boolean assignDefaultRole(String uid) {
+        try {
+            firebaseAuth.setCustomUserClaims(uid, Map.of("role", DEFAULT_ROLE));
+            log.info("Default role '{}' assigned to uid={}", DEFAULT_ROLE, uid);
+            return true;
+        } catch (FirebaseAuthException e) {
+            log.error("Failed to assign default role to uid={}: {}", uid, e.getMessage());
+            return false;
+        }
     }
 }
