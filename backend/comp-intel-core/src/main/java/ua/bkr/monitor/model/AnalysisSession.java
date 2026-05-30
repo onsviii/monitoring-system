@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import ua.bkr.monitor.model.enums.AnalysisStatus;
+import ua.bkr.monitor.model.record.Location;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,9 +26,13 @@ public class AnalysisSession {
     @JoinColumn(nullable = false)
     private UserProfile user;
 
-    private String businessNiche;
-    private String geographicZone;
-    private String competitorSelectionMode;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "niche_id", nullable = false)
+    private Niche businessNiche;
+
+    @Embedded
+    private Location location;
+
     private Integer radiusKm;
 
     @Enumerated(EnumType.STRING)
