@@ -106,10 +106,19 @@ public class GooglePlacesClient {
             ));
         }
 
+        log.debug("Places free search: query='{}', googleTypes={}, location={}", query, googleTypes, location);
         try {
-            return executeSearchRequest(body);
+            List<PlaceInfo> results = executeSearchRequest(body);
+
+            if (results == null) {
+                results = List.of();
+            }
+
+            log.debug("Places free search returned {} results", results.size());
+            return results;
         } catch (Exception e) {
             String errorMsg = "Failed to execute free search for query:\n%s".formatted(query);
+            log.error("Places free search error for query='{}': {}", query, e.getMessage());
             CollectionErrorType type = CollectionErrorType.SEARCH_FAILED;
             logError(null, type, errorMsg);
             throw new DataCollectionException(type, null, errorMsg);
@@ -156,7 +165,12 @@ public class GooglePlacesClient {
                 .retrieve()
                 .body(GooglePlacesSearchResponse.class);
 
-        return response != null ? mapper.toPlaceInfoList(response.places()) : List.of();
+        if (response == null || response.places() == null) {
+            return List.of();
+        }
+
+        List<PlaceInfo> mapped = mapper.toPlaceInfoList(response.places());
+        return mapped != null ? mapped : List.of();
     }
 
     private void exponentialBackoff(int attempt) {
