@@ -3,8 +3,10 @@ package ua.bkr.monitor.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ua.bkr.monitor.dto.AnalysisPreviewRequest;
 import ua.bkr.monitor.dto.AnalysisStatusResponse;
 import ua.bkr.monitor.dto.CreateAnalysisRequest;
+import ua.bkr.monitor.dto.PlaceSearchResponse;
 import ua.bkr.monitor.exception.ResourceNotFoundException;
 import ua.bkr.monitor.mapper.AnalysisSessionMapper;
 import ua.bkr.monitor.model.AnalysisSession;
@@ -24,6 +26,23 @@ public class AnalysisService {
     private final NicheRepository nicheRepository;
     private final PipelineOrchestrator pipelineOrchestrator;
     private final AnalysisSessionMapper sessionMapper;
+    private final PlacesService placesService;
+
+    /**
+     * Попередній пошук конкурентів без створення сесії в БД.
+     */
+    @Transactional(readOnly = true)
+    public PlaceSearchResponse preview(String userId, AnalysisPreviewRequest request) {
+        userProfileRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+
+        return placesService.findCompetitors(
+                request.nicheCode(),
+                request.location(),
+                request.radiusKm(),
+                request.maxCompetitors()
+        );
+    }
 
     @Transactional
     public AnalysisStatusResponse create(String userId, CreateAnalysisRequest request) {

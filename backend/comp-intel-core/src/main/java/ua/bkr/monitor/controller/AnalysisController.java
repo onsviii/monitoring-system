@@ -18,12 +18,25 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('BUSINESS')")
 public class AnalysisController {
-
     private final AnalysisService analysisService;
     private final ReportService reportService;
 
     /**
-     * POST /api/v1/analyses — ініціалізація нового аналізу (FR-01).
+     * POST /api/v1/analyses/preview — попередній перегляд конкурентів.
+     * Використовується фронтендом для відображення списку закладів у радіусі
+     * перед тим, як користувач підтвердить створення сесії аналізу.
+     */
+    @PostMapping("/preview")
+    public ResponseEntity<PlaceSearchResponse> previewAnalysis(
+            @AuthenticationPrincipal String userId,
+            @Valid @RequestBody AnalysisPreviewRequest request) {
+
+        PlaceSearchResponse response = analysisService.preview(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/v1/analyses — ініціалізація нового аналізу.
      * Повертає 202 Accepted з ідентифікатором сесії.
      */
     @PostMapping
@@ -43,7 +56,7 @@ public class AnalysisController {
     }
 
     /**
-     * GET /api/v1/analyses/{id}/report — повний аналітичний звіт (FR-07).
+     * GET /api/v1/analyses/{id}/report — повний аналітичний звіт.
      */
     @GetMapping("/{id}/report")
     public ResponseEntity<ReportResponse> getReport(
