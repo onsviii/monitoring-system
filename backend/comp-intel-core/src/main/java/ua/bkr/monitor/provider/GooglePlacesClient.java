@@ -9,6 +9,7 @@ import org.springframework.web.client.RestClient;
 import ua.bkr.monitor.exception.DataCollectionException;
 import ua.bkr.monitor.model.enums.CollectionErrorType;
 import ua.bkr.monitor.model.record.Location;
+import ua.bkr.monitor.provider.dto.GooglePlaceDto;
 import ua.bkr.monitor.provider.dto.GooglePlacesSearchResponse;
 import ua.bkr.monitor.provider.dto.GoogleReviewsResponse;
 import ua.bkr.monitor.provider.mapper.GooglePlacesMapper;
@@ -41,6 +42,26 @@ public class GooglePlacesClient {
         this.restClient = RestClient.builder()
                 .defaultHeader("X-Goog-Api-Key", apiKey)
                 .build();
+    }
+
+    public PlaceInfo getPlaceInfo(String placeId) {
+        String url = String.format(PLACE_DETAILS_URL, placeId);
+
+        try {
+            GooglePlaceDto dto = restClient.get()
+                    .uri(url)
+                    .header("X-Goog-Api-Key", apiKey)
+                    .header("X-Goog-FieldMask",
+                            "id,displayName,formattedAddress,rating,location,primaryType")
+                    .retrieve()
+                    .body(GooglePlaceDto.class);
+
+            return mapper.toPlaceInfo(dto);
+
+        } catch (Exception e) {
+            throw new DataCollectionException(
+                    CollectionErrorType.SEARCH_FAILED, placeId, e.getMessage());
+        }
     }
 
     /**
@@ -117,10 +138,6 @@ public class GooglePlacesClient {
         log.debug("Places free search: query='{}', googleTypes={}, location={}", query, googleTypes, location);
         try {
             List<PlaceInfo> results = executeSearchRequest(body);
-
-            if (results == null) {
-                results = List.of();
-            }
 
             log.debug("Places free search returned {} results", results.size());
             return results;
