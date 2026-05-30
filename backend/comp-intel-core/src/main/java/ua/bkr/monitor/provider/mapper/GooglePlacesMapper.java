@@ -18,8 +18,7 @@ public interface GooglePlacesMapper {
     @Mapping(source = "displayName.text", target = "name", defaultValue = "Unknown")
     @Mapping(source = "formattedAddress", target = "address")
     @Mapping(source = "primaryType", target = "category")
-    @Mapping(source = "location.latitude", target = "latitude")
-    @Mapping(source = "location.longitude", target = "longitude")
+    @Mapping(source = "location", target = "location")
     PlaceInfo toPlaceInfo(GooglePlaceDto place);
 
     List<PlaceInfo> toPlaceInfoList(List<GooglePlaceDto> places);

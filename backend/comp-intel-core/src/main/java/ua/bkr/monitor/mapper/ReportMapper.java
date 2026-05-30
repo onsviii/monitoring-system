@@ -39,7 +39,7 @@ public interface ReportMapper {
             @Context Map<UUID, List<CharacteristicSource>> charSourcesMap
     );
 
-    @Mapping(target = "sourceIds", expression = "java( mapRecommendationSources(recommendation.getId(), recSourcesMap) )")
+    @Mapping(target = "sourceReviewIds", expression = "java( mapRecommendationSources(recommendation.getId(), recSourcesMap) )")
     RecommendationDto toRecommendationDto(
             Recommendation recommendation,
             @Context Map<UUID, List<RecommendationSource>> recSourcesMap
