@@ -1,0 +1,6 @@
+fastapi==0.115.0
+uvicorn==0.30.0
+pydantic==2.9.0
+transformers==4.44.0
+spacy==3.7.5
+# uk_core_news_sm встановлюється окремо: python -m spacy download uk_core_news_sm
