@@ -1,13 +1,27 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/bkr_monitor
-    username: bkr_user
-    password: bkr_password
+    username: postgres
+    password: postgres
 
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+
+groq:
+  url: https://api.groq.com/openai/v1/chat/completions
+  api-key: ${GROQ_API_KEY}
+  model: ${GROQ_MODEL:llama-3.3-70b-versatile}
+
+firebase:
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH}
+
+google:
+  places:
+    api-key: ${GOOGLE_PLACES_API_KEY}
+    text-search-url: https://places.googleapis.com/v1/places:searchText
+    place-details-url: https://places.googleapis.com/v1/places/%s
 
 ml-service:
   base-url: http://localhost:8001
