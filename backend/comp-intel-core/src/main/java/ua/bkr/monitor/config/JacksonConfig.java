@@ -9,7 +9,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
 public class JacksonConfig {
-    @Bean
+
+    @Bean("jacksonJsonMapper")
     @Primary
     public ObjectMapper objectMapper() {
         return JsonMapper.builder()

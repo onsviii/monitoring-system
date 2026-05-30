@@ -9,6 +9,11 @@ spring:
       ddl-auto: update
     show-sql: true
 
+  jackson:
+    default-property-inclusion: non_null
+  main:
+    allow-bean-definition-overriding: true
+
 groq:
   api-url: https://api.groq.com/openai/v1/chat/completions
   api-key: ${GROQ_API_KEY}
@@ -31,3 +36,5 @@ logging:
     root: INFO
     ua.bkr.monitor: DEBUG
     org.hibernate.SQL: DEBUG
+server:
+  port: 8081
