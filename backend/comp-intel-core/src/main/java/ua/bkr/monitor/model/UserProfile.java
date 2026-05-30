@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import ua.bkr.monitor.model.record.Location;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,8 +28,9 @@ public class UserProfile {
 
     private String googlePlaceId;
     private String address;
-    private Double latitude;
-    private Double longitude;
+
+    @Embedded
+    private Location location;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
