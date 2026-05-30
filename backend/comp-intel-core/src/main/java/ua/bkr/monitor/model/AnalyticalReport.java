@@ -23,6 +23,9 @@ public class AnalyticalReport {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(nullable = false)
+    private String name;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
     private AnalysisSession session;
