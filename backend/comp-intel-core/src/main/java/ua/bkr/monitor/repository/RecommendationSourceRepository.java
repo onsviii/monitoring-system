@@ -8,6 +8,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface RecommendationSourceRepository extends JpaRepository<RecommendationSource, RecommendationSourceId> {
-
     List<RecommendationSource> findByRecommendationId(UUID recommendationId);
+    List<RecommendationSource> findByRecommendationIdIn(List<UUID> recommendationIds);
 }
