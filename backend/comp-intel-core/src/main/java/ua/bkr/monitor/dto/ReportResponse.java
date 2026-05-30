@@ -1,7 +1,5 @@
 package ua.bkr.monitor.dto;
 
-import ua.bkr.monitor.model.enums.ChatRole;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
