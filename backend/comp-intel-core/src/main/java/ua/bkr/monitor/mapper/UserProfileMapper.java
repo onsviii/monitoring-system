@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Mapper(componentModel = "spring", imports = {LocalDateTime.class, Role.class})
 public interface UserProfileMapper {
     @Mapping(target = "id", source = "userId")
-    @Mapping(target = "role", expression = "java(Role.USER)")
+    @Mapping(target = "role", expression = "java(Role.BUSINESS)")
     @Mapping(target = "niche", source = "niche")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "sessions", ignore = true)
