@@ -7,7 +7,7 @@ public record CompetitorDto(
         UUID id,
         String name,
         String address,
-        String category,
+        String niche,
         Double rating,
         int reviewCount,
         boolean isOwn,
