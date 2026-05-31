@@ -1,17 +1,8 @@
-"""
-Модуль анонімізації тексту.
-
-Двошарова обробка:
-  Шар 1 (RegEx): детерміноване видалення структурованих шаблонів —
-    телефонні номери, email, URL.
-  Шар 2 (NER): spaCy uk_core_news_sm для маскування імен осіб (PER).
-
-Анонімізація відбувається ДО передачі тексту будь-якому зовнішньому сервісу.
-Локальне розгортання NER гарантує, що персональні дані не покидають сервер.
-"""
-
 import re
 import spacy
+from spacy.language import Language
+from spacy.tokens import Span
+import pymorphy3
 import logging
 
 logger = logging.getLogger(__name__)
@@ -52,15 +43,55 @@ def _regex_layer(text: str) -> str:
 # ─── Шар 2: NER-модель ───
 
 _nlp = None
+_morph = None
+
+
+@Language.component("morph_person_recognizer")
+def morph_person_recognizer(doc):
+    """
+    Кастомний компонент spaCy, що використовує pymorphy3
+    для пошуку імен незалежно від регістру.
+    """
+    new_ents = list(doc.ents)
+
+    for token in doc:
+        if token.is_punct or token.is_space or token.is_stop or token.is_digit:
+            continue
+
+        parsed = _morph.parse(token.text)
+
+        # Перевіряємо, чи є хоча б одна форма цього слова іменем/прізвищем
+        # 'Name' - ім'я, 'Surn' - прізвище, 'Patr' - по батькові
+        is_person = any(
+            'Name' in p.tag or 'Surn' in p.tag or 'Patr' in p.tag
+            for p in parsed
+        )
+
+        if is_person:
+            span = Span(doc, token.i, token.i + 1, label="PER")
+
+            # Перевіряємо, щоб нова сутність не накладалася на вже знайдені (напр., стандартним NER)
+            if not any(span.start < ent.end and span.end > ent.start for ent in new_ents):
+                new_ents.append(span)
+
+    doc.ents = new_ents
+    return doc
 
 
 def _load_ner_model():
-    """Ліниве завантаження spaCy-моделі (один раз при першому виклику)."""
-    global _nlp
+    """Ліниве завантаження моделей."""
+    global _nlp, _morph
     if _nlp is None:
+        logger.info("Завантаження pymorphy3 (український словник)...")
+        _morph = pymorphy3.MorphAnalyzer(lang='uk')
+
         logger.info("Завантаження spaCy uk_core_news_sm...")
         _nlp = spacy.load("uk_core_news_sm")
-        logger.info("spaCy NER модель завантажена.")
+
+        # Додаємо наш морфологічний аналізатор ПІСЛЯ стандартного NER.
+        _nlp.add_pipe("morph_person_recognizer", after="ner")
+
+        logger.info("spaCy NER + Morph Analyzer завантажені.")
     return _nlp
 
 
@@ -68,11 +99,12 @@ def _ner_layer(text: str) -> str:
     """Шар 2: маскування імен осіб (NER-мітка PER)."""
     nlp = _load_ner_model()
     doc = nlp(text)
+
     anonymized = text
-    # Заміна з кінця, щоб не зсувати індекси
     for ent in reversed(doc.ents):
         if ent.label_ == "PER":
             anonymized = anonymized[:ent.start_char] + "[ОСОБА]" + anonymized[ent.end_char:]
+
     return anonymized
 
 

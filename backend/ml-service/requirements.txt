@@ -3,4 +3,6 @@ uvicorn==0.30.0
 pydantic==2.9.0
 transformers==4.44.0
 spacy==3.7.5
+pymorphy3==2.0.1
+pymorphy2-dicts-uk==2.4.1.1.1460299261
 # uk_core_news_sm встановлюється окремо: python -m spacy download uk_core_news_sm
