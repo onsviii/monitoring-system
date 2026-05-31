@@ -3,7 +3,6 @@ package ua.bkr.monitor.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.ObjectMapper;
 import ua.bkr.monitor.dto.*;
 import ua.bkr.monitor.dto.SourcesResponse.ReviewSourceDto;
 import ua.bkr.monitor.mapper.ReportMapper;
@@ -13,7 +12,6 @@ import ua.bkr.monitor.repository.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -79,6 +77,20 @@ public class ReportService {
                 .toList();
 
         return reportMapper.toReportResponse(report, session, competitorDtos, recommendationDtos);
+    }
+
+    @Transactional
+    public UpdateReportNameResponse updateReportName(String userId, UUID sessionId, UpdateReportNameRequest request) {
+        getSessionForUser(userId, sessionId);
+        AnalyticalReport report = reportRepository.findBySessionId(sessionId)
+                .orElseThrow(() -> new RuntimeException("Report not ready for session: " + sessionId));
+
+        String trimmedName = request.reportName().trim();
+        report.setName(trimmedName);
+
+        reportRepository.save(report);
+
+        return new UpdateReportNameResponse(sessionId, trimmedName);
     }
 
     /**

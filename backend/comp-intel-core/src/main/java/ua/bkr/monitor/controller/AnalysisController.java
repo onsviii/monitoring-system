@@ -68,6 +68,19 @@ public class AnalysisController {
     }
 
     /**
+     * PATCH /api/v1/analyses/{id}/report — оновлення назви звіту.
+     */
+    @PatchMapping("/{id}/report")
+    public ResponseEntity<UpdateReportNameResponse> updateReportName(
+            @AuthenticationPrincipal String userId,
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateReportNameRequest request) {
+
+        UpdateReportNameResponse response = reportService.updateReportName(userId, id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * GET /api/v1/analyses/{id}/sources?competitor={compId}&aspect={name}
      * Першоджерела конкретного аспекту конкурента.
      */

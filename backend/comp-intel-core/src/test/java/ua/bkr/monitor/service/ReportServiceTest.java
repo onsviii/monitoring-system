@@ -60,6 +60,7 @@ class ReportServiceTest {
         report.setGeneratedAt(LocalDateTime.of(2024, 2, 1, 10, 0));
         report.setAiMarked(true);
         report.setDisclaimer("Disclaimer");
+        report.setName("Q1 Report");
 
         Competitor competitor = new Competitor();
         competitor.setId(competitorId);
@@ -107,6 +108,7 @@ class ReportServiceTest {
         );
         ReportResponse expected = new ReportResponse(
                 sessionId,
+                report.getName(),
                 report.getGeneratedAt(),
                 report.getAiMarked(),
                 report.getDisclaimer(),

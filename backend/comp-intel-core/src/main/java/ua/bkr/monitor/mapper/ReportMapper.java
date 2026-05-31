@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = "spring")
 public interface ReportMapper {
     @Mapping(target = "sessionId", source = "session.id")
+    @Mapping(target = "reportName", source = "report.name")
     @Mapping(target = "generatedAt", source = "report.generatedAt")
     @Mapping(target = "aiMarked", source = "report.aiMarked")
     @Mapping(target = "disclaimer", source = "report.disclaimer")

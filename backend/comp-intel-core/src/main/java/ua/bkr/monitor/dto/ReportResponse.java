@@ -6,6 +6,7 @@ import java.util.UUID;
 
 public record ReportResponse(
         UUID sessionId,
+        String reportName,
         LocalDateTime generatedAt,
         Boolean aiMarked,
         String disclaimer,
