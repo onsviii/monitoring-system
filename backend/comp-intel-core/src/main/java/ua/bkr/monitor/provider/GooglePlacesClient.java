@@ -161,6 +161,7 @@ public class GooglePlacesClient {
             try {
                 GoogleReviewsResponse response = restClient.get()
                         .uri(url)
+                        .header("X-Goog-FieldMask", "reviews")
                         .retrieve()
                         .body(GoogleReviewsResponse.class);
 

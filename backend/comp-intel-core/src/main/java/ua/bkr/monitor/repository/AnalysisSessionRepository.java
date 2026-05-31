@@ -13,4 +13,7 @@ public interface AnalysisSessionRepository extends JpaRepository<AnalysisSession
     
     @EntityGraph(attributePaths = {"businessNiche"})
     Optional<AnalysisSession> findWithNicheById(UUID id);
+
+    @EntityGraph(attributePaths = {"user"})
+    Optional<AnalysisSession> findWithUserById(UUID id);
 }
