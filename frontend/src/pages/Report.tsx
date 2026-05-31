@@ -12,6 +12,8 @@ import {
   FileText,
   ThumbsDown,
   ThumbsUp,
+  Pencil,
+  Check,
   X,
 } from 'lucide-react';
 
@@ -22,7 +24,7 @@ import PositioningMatrix from '../components/analytics/PositioningMatrix';
 import SentimentTrendChart from '../components/analytics/SentimentTrendChart';
 import ReportMap from '../components/ui/ReportMap';
 import StrategyAIChat from '../components/analytics/StrategyAIChat';
-import { getAnalysisReport, getAnalysisStatus, CompetitorReportResponse } from '../api/analysisService';
+import { getAnalysisReport, getAnalysisStatus, CompetitorReportResponse, updateReportName } from '../api/analysisService';
 
 const ChartSkeletonLoader = ({ text }: { text: string }) => (
   <div className="w-full h-64 flex flex-col items-center justify-center space-y-3.5 bg-gray-50/50 rounded-xl animate-pulse border border-dashed border-gray-200 p-4">
@@ -42,6 +44,10 @@ export default function Report() {
   const [businessName, setBusinessName] = useState('Копальня кави');
   const [analysisReport, setAnalysisReport] = useState<CompetitorReportResponse | null>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
+  const [isEditingReportName, setIsEditingReportName] = useState(false);
+  const [reportNameDraft, setReportNameDraft] = useState('');
+  const [reportNameError, setReportNameError] = useState<string | null>(null);
+  const [isSavingReportName, setIsSavingReportName] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -91,6 +97,12 @@ export default function Report() {
       active = false;
     };
   }, [navigate]);
+
+  useEffect(() => {
+    if (!isEditingReportName) {
+      setReportNameDraft(analysisReport?.reportName || '');
+    }
+  }, [analysisReport?.reportName, isEditingReportName]);
 
   const competitors = React.useMemo(() => {
     if (analysisReport && analysisReport.competitors && analysisReport.competitors.length > 0) {
@@ -207,6 +219,40 @@ export default function Report() {
     }, 1500);
   };
 
+  const handleReportNameEdit = () => {
+    setReportNameError(null);
+    setIsEditingReportName(true);
+  };
+
+  const handleReportNameCancel = () => {
+    setReportNameDraft(analysisReport?.reportName || '');
+    setReportNameError(null);
+    setIsEditingReportName(false);
+  };
+
+  const handleReportNameSave = async () => {
+    if (!analysisReport) return;
+    const trimmedName = reportNameDraft.trim();
+    if (!trimmedName) {
+      setReportNameError('Вкажіть назву звіту');
+      return;
+    }
+
+    setIsSavingReportName(true);
+    setReportNameError(null);
+    try {
+      const response = await updateReportName(analysisReport.sessionId, trimmedName);
+      setAnalysisReport((prev) => (prev ? { ...prev, reportName: response.reportName } : prev));
+      setReportNameDraft(response.reportName);
+      setIsEditingReportName(false);
+    } catch (err) {
+      console.warn('Помилка оновлення назви звіту:', err);
+      setReportNameError('Не вдалося зберегти назву');
+    } finally {
+      setIsSavingReportName(false);
+    }
+  };
+
   return (
     <div id="report-page" className="min-h-screen bg-gray-50/55 p-3 sm:p-5 md:p-8 space-y-6 max-w-[1450px] mx-auto pb-24">
       
@@ -308,6 +354,58 @@ export default function Report() {
       <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-3xs">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
           <div>
+            <div className="flex items-center gap-2">
+              {isEditingReportName ? (
+                <input
+                  type="text"
+                  value={reportNameDraft}
+                  onChange={(event) => setReportNameDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') handleReportNameSave();
+                    if (event.key === 'Escape') handleReportNameCancel();
+                  }}
+                  className="text-sm font-semibold text-gray-800 bg-white border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  placeholder="Назва звіту"
+                  disabled={isSavingReportName}
+                />
+              ) : (
+                <span className="text-sm font-semibold text-gray-800">
+                  {analysisReport?.reportName || 'Аналітичний звіт'}
+                </span>
+              )}
+              {!isEditingReportName ? (
+                <button
+                  onClick={handleReportNameEdit}
+                  className="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Редагувати назву звіту"
+                  disabled={!analysisReport || isSavingReportName}
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={handleReportNameSave}
+                    className="p-1.5 rounded-md border border-emerald-200 text-emerald-700 hover:text-emerald-800 hover:border-emerald-300 transition-colors disabled:opacity-50"
+                    title="Зберегти"
+                    disabled={isSavingReportName}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={handleReportNameCancel}
+                    className="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-300 transition-colors disabled:opacity-50"
+                    title="Скасувати"
+                    disabled={isSavingReportName}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+            {reportNameError && (
+              <p className="text-xs text-rose-600 mt-1">{reportNameError}</p>
+            )}
             <h1 className="text-2xl font-bold tracking-tight text-gray-900">{businessName}</h1>
             <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-1 font-medium">
               <span className="w-2 h-2 rounded-full bg-blue-600 block shrink-0" />

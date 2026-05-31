@@ -111,6 +111,7 @@ export interface RecommendationDto {
 
 export interface CompetitorReportResponse {
   sessionId: string;
+  reportName: string;
   generatedAt: string;
   aiMarked: boolean;
   disclaimer: string;
@@ -210,6 +211,11 @@ export interface SourcesResponse {
   reviews: ReviewSourceDto[];
 }
 
+export interface UpdateReportNameResponse {
+  sessionId: string;
+  reportName: string;
+}
+
 export async function retryAnalysis(id: string): Promise<AnalysisResponse> {
   const endpoint = `${API_ENDPOINTS.ANALYSES}/${id}/retry`;
   const response = await authenticatedFetch(endpoint, { method: 'POST' });
@@ -257,6 +263,16 @@ export async function getAnalysisReport(id: string): Promise<CompetitorReportRes
   const endpoint = API_ENDPOINTS.ANALYSIS_REPORT.replace('{id}', id);
   const response = await authenticatedFetch(endpoint, { method: 'GET' });
   await handleBackendResponse(response, `Помилка отримання звіту аналізу [ID: ${id}]`);
+  return response.json();
+}
+
+export async function updateReportName(id: string, reportName: string): Promise<UpdateReportNameResponse> {
+  const endpoint = API_ENDPOINTS.ANALYSIS_REPORT.replace('{id}', id);
+  const response = await authenticatedFetch(endpoint, {
+    method: 'PATCH',
+    body: JSON.stringify({ reportName }),
+  });
+  await handleBackendResponse(response, `Помилка оновлення назви звіту [ID: ${id}]`);
   return response.json();
 }
 
