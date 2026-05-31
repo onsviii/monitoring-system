@@ -19,7 +19,7 @@ RUN python -m spacy download uk_core_news_sm
 # Код сервісу
 COPY . .
 
-# Порт ML-сервісу (внутрішня мережа, без HTTPS — підрозділ 2.5.4)
+# Порт ML-сервісу
 EXPOSE 8001
 
 # Запуск через uvicorn
