@@ -1,4 +1,4 @@
-package ua.bkr.monitor;
+package ua.bkr.monitor.event;
 
 import ua.bkr.monitor.dto.CreateAnalysisRequest;
 

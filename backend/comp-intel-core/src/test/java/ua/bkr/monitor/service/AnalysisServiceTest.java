@@ -5,7 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
-import ua.bkr.monitor.AnalysisCreatedEvent;
+import ua.bkr.monitor.event.AnalysisCreatedEvent;
 import ua.bkr.monitor.dto.*;
 import ua.bkr.monitor.exception.ResourceNotFoundException;
 import ua.bkr.monitor.mapper.AnalysisSessionMapper;

@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import ua.bkr.monitor.AnalysisCreatedEvent;
+import ua.bkr.monitor.event.AnalysisCreatedEvent;
 import ua.bkr.monitor.dto.AggregatedStatistics;
 import ua.bkr.monitor.dto.CreateAnalysisRequest;
 import ua.bkr.monitor.exception.DataCollectionException;
