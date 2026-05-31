@@ -4,13 +4,12 @@ import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import ua.bkr.monitor.dto.CreateAnalysisRequest;
 import ua.bkr.monitor.dto.AnalysisStatusResponse;
+import ua.bkr.monitor.dto.CreateAnalysisRequest;
 import ua.bkr.monitor.model.AnalysisSession;
 import ua.bkr.monitor.model.Niche;
 import ua.bkr.monitor.model.UserProfile;
 import ua.bkr.monitor.model.enums.AnalysisStage;
-import ua.bkr.monitor.model.enums.SessionStatus;
 
 @Mapper(componentModel = "spring", imports = {AnalysisSession.class})
 public interface AnalysisSessionMapper {

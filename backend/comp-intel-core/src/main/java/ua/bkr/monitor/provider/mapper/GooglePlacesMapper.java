@@ -4,11 +4,11 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import ua.bkr.monitor.dto.PlaceSearchResponse;
+import ua.bkr.monitor.dto.PlaceSearchResponse.PlaceCandidate;
 import ua.bkr.monitor.provider.GooglePlacesClient.PlaceInfo;
 import ua.bkr.monitor.provider.GooglePlacesClient.RawReview;
 import ua.bkr.monitor.provider.dto.GooglePlaceDto;
 import ua.bkr.monitor.provider.dto.GoogleReviewDto;
-import ua.bkr.monitor.dto.PlaceSearchResponse.PlaceCandidate;
 
 import java.util.List;
 

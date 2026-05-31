@@ -4,12 +4,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 import ua.bkr.monitor.dto.AggregatedStatistics;
-import ua.bkr.monitor.provider.LlmProvider;
 import ua.bkr.monitor.model.LLMInteractionLog;
 import ua.bkr.monitor.model.record.ChatTurn;
 import ua.bkr.monitor.model.record.ExtractedCharacteristic;
 import ua.bkr.monitor.model.record.GeneratedRecommendation;
 import ua.bkr.monitor.model.record.IndexedReview;
+import ua.bkr.monitor.provider.LlmProvider;
 import ua.bkr.monitor.repository.AnalysisSessionRepository;
 import ua.bkr.monitor.repository.LLMInteractionLogRepository;
 

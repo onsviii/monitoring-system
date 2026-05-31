@@ -1,9 +1,10 @@
 package ua.bkr.monitor.model;
 
 import jakarta.persistence.*;
-import lombok.*;
-import java.io.Serializable;
-import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @IdClass(CharacteristicSourceId.class)
