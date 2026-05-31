@@ -84,7 +84,6 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
           <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" />
           <div>
             <h4 className="font-bold text-sm text-gray-900">Запущено фоновий обчислювальний аналіз</h4>
-            <p className="text-[11px] text-gray-500">Система опитує AI-оркестратор кожні 2 секунди (polling)</p>
           </div>
         </div>
 

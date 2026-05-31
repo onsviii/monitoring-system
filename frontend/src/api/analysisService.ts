@@ -17,14 +17,6 @@ export interface PreviewAnalysisRequest {
   maxCompetitors: number;
 }
 
-export interface CreateAnalysisRequest {
-  reportName: string;
-  nicheCode: string;
-  location: Location;
-  radiusKm: number;        // 0.5, 1, 2, 5, 10
-  maxCompetitors?: number; // 1–10, дефолт 10
-}
-
 export interface PlaceCandidate {
   googlePlaceId: string;
   name: string;
@@ -47,13 +39,19 @@ export interface AnalysisResponse {
   createdAt: string;
 }
 
+export interface SelectedPlace {
+  placeId: string;
+  name: string;
+  address?: string;
+  rating?: number;
+}
+
 export interface CreateAnalysisRequest {
   nicheCode: string;
   reportName: string;
   location: Location;
   radiusKm: number;
-  maxCompetitors?: number;
-  selectedPlaceIds: string[];
+  selectedPlaces: SelectedPlace[];
 }
 
 export interface AnalysisResponse {

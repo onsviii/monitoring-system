@@ -219,7 +219,6 @@ export default function Dashboard() {
     });
   };
 
-  // Крок 2: Фінальний запуск аналізу (Реальний)
   const handleStartAnalysis = async () => {
     if (selectedPlaceIds.length === 0) {
       setErrorMsg('Виберіть хоча б одного конкурента для аналізу.');
@@ -230,14 +229,21 @@ export default function Dashboard() {
     setIsCreating(true);
 
     try {
+      const selectedPlacesData = candidates
+          .filter(candidate => selectedPlaceIds.includes(candidate.googlePlaceId))
+          .map(candidate => ({
+            placeId: candidate.googlePlaceId,
+            name: candidate.name,
+            address: candidate.address,
+            rating: candidate.rating
+          }));
+
       const response = await createAnalysis({
         reportName: analysisName.trim(),
         nicheCode: nicheCode,
-        // ОНОВЛЕНО: Приведення типів до повної назви
         location: location as {latitude: number; longitude: number},
         radiusKm,
-        maxCompetitors,
-        selectedPlaceIds
+        selectedPlaces: selectedPlacesData
       });
 
       // Зберігаємо ID нового аналізу
@@ -257,11 +263,11 @@ export default function Dashboard() {
     }
   };
 
-  // Відновлення аналізу після FAILED
   const handleRetry = async () => {
     if (!currentSessionId) return;
 
     setIsRetrying(true);
+    setErrorMsg(null);
     try {
       const response = await retryAnalysis(currentSessionId);
       setIsFailed(false);
@@ -274,16 +280,6 @@ export default function Dashboard() {
     } finally {
       setIsRetrying(false);
     }
-  };
-
-  const handleFillDemo = () => {
-    setAnalysisName('Демо аналіз конкурентів');
-    if (niches.length > 0) setNicheCode(niches[0].code);
-    else setNicheCode('coffee_shop');
-    // ОНОВЛЕНО: Повні назви у демо-даних
-    setLocation({ latitude: 49.8415, longitude: 24.0323 });
-    setRadiusKm(5);
-    setMaxCompetitors(10);
   };
 
   return (
@@ -332,13 +328,6 @@ export default function Dashboard() {
                     <h3 className="font-bold text-gray-900 text-sm">Аналіз для «{businessName}»</h3>
                     <p className="text-[11px] text-gray-500 mt-1">Крок 1: Введіть параметри для пошуку конкурентів</p>
                   </div>
-                  <button
-                      type="button"
-                      onClick={handleFillDemo}
-                      className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 bg-blue-50/50 hover:bg-blue-50 border border-blue-100 px-3 py-1 rounded-lg transition-colors"
-                  >
-                    Демо
-                  </button>
                 </div>
 
                 {errorMsg && (

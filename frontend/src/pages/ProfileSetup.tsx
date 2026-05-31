@@ -75,7 +75,7 @@ export default function ProfileSetup() {
   const [manualMode, setManualMode] = useState(false);
   const [manualName, setManualName] = useState('');
   const [manualAddress, setManualAddress] = useState('');
-  const [manualCoords, setManualCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [manualCoords, setManualCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -218,7 +218,7 @@ export default function ProfileSetup() {
             <label className="text-xs font-bold text-gray-700 block">
               Крок 1. Оберіть бізнес-нішу, до якої належить заклад
             </label>
-            <div className="relative w-full z-[60]">
+            <div className="relative w-full z-10">
                <SearchableNicheSelect
                   value={nicheOptions.find(n => n.code === nicheCode)?.displayName ?? nicheCode}
                   onChange={(displayName) => {
@@ -236,7 +236,7 @@ export default function ProfileSetup() {
             <label className="text-xs font-bold text-gray-700 block">
               Крок 2. Введіть назву закладу для пошуку у Google Places
             </label>
-            <form onSubmit={handleSearch} className="flex gap-2 relative z-[50]">
+            <form onSubmit={handleSearch} className="flex gap-2 relative">
               <div className="relative flex-1">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 transform -translate-y-1/2" />
                 <input
@@ -380,16 +380,16 @@ export default function ProfileSetup() {
                   onChange={setManualCoords}
                 />
                 {manualCoords && (
-                  <div className="bg-gray-50 border border-gray-150 rounded-lg px-3 py-2 flex justify-between items-center text-[10px] font-mono text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Navigation className="w-3 h-3 text-gray-400 shrink-0" />
-                      Широта: <strong className="text-gray-800">{manualCoords.lat.toFixed(5)}° N</strong>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Navigation className="w-3 h-3 text-gray-400 shrink-0 rotate-90" />
-                      Довгота: <strong className="text-gray-800">{manualCoords.lng.toFixed(5)}° E</strong>
-                    </span>
-                  </div>
+                    <div className="bg-gray-50 border border-gray-150 rounded-lg px-3 py-2 flex justify-between items-center text-[10px] font-mono text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <Navigation className="w-3 h-3 text-gray-400 shrink-0" />
+                        Широта: <strong className="text-gray-800">{manualCoords.latitude.toFixed(5)}° N</strong>
+                      </span>
+                                        <span className="flex items-center gap-1">
+                        <Navigation className="w-3 h-3 text-gray-400 shrink-0 rotate-90" />
+                        Довгота: <strong className="text-gray-800">{manualCoords.longitude.toFixed(5)}° E</strong>
+                      </span>
+                    </div>
                 )}
               </div>
             </div>
