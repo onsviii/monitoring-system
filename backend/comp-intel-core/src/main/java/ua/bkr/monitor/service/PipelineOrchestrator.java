@@ -62,7 +62,7 @@ public class PipelineOrchestrator {
 
     @Async
     public void runAsync(UUID sessionId, CreateAnalysisRequest request) {
-        AnalysisSession session = sessionRepository.findById(sessionId).orElseThrow();
+        AnalysisSession session = sessionRepository.findWithUserById(sessionId).orElseThrow();
         session.setStatus(SessionStatus.RUNNING);
         session.setStage(AnalysisStage.COLLECTING_DATA);
         sessionRepository.save(session);
@@ -70,15 +70,17 @@ public class PipelineOrchestrator {
         try {
             runFromCollecting(session, request);
         } catch (DataCollectionException e) {
+            log.warn("Data collection error for session {}: {}", sessionId, e.getMessage());
             failSession(session, e.getErrorType().name(), e.getMessage());
         } catch (Exception e) {
+            log.warn("Data collection error for session {}: {}", sessionId, e.getMessage());
             failSession(session, "UNKNOWN", e.getMessage());
         }
     }
 
     @Async
     public void resumeAsync(UUID sessionId) {
-        AnalysisSession session = sessionRepository.findById(sessionId).orElseThrow();
+        AnalysisSession session = sessionRepository.findWithUserById(sessionId).orElseThrow();
         session.setStatus(SessionStatus.RUNNING);
         sessionRepository.save(session);
 
