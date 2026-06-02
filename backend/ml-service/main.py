@@ -64,7 +64,7 @@ def anonymize_endpoint(request: AnonymizeRequest):
     і лише потім надходить на класифікацію.
     """
     if not request.texts:
-        raise HTTPException(status_code=400, detail="Texts list is empty")
+        return AnonymizeResponse(texts=[])
 
     try:
         anonymized = anonymize_batch(request.texts)
@@ -89,7 +89,7 @@ def classify_endpoint(request: ClassifyRequest):
     Multi-Task архітектура: один прохід енкодера → 4 голівки паралельно.
     """
     if not request.texts:
-        raise HTTPException(status_code=400, detail="Texts list is empty")
+        return ClassifyResponse(predictions=[])
 
     try:
         predictions = classify_batch(request.texts)
