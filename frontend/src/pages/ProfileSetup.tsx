@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../config/firebase';
-import { createProfile, searchPlaces } from '../api/profileService';
+import { createProfile, searchPlaces, PlaceCandidateDto } from '../api/profileService';
 import { getNiches, NicheDto } from '../api/analysisService';
 import SearchableNicheSelect from '../components/ui/SearchableNicheSelect';
 import LocationMap from '../components/ui/LocationMap';
@@ -22,16 +22,6 @@ import {
   Building2,
   ChevronRight
 } from 'lucide-react';
-
-interface PlaceCandidate {
-  googlePlaceId: string;
-  name: string;
-  address: string;
-  rating: number;
-  userRatingsTotal: number;
-  latitude: number;
-  longitude: number;
-}
 
 export default function ProfileSetup() {
   const navigate = useNavigate();
@@ -63,12 +53,12 @@ export default function ProfileSetup() {
 
   // Стани пошуку
   const [searchQuery, setSearchQuery] = useState('');
-  const [candidates, setCandidates] = useState<PlaceCandidate[]>([]);
+  const [candidates, setCandidates] = useState<PlaceCandidateDto[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   
   // Вибраний кандидат
-  const [selectedCandidate, setSelectedCandidate] = useState<PlaceCandidate | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<PlaceCandidateDto | null>(null);
 
   // Стан для ручного вибору локації ("Мого закладу немає")
   const [manualMode, setManualMode] = useState(false);
@@ -103,7 +93,7 @@ export default function ProfileSetup() {
   };
 
   // Метод для вибору закладу з автокомпліту
-  const selectCandidate = (place: PlaceCandidate) => {
+  const selectCandidate = (place: PlaceCandidateDto) => {
     setSelectedCandidate(place);
     setManualMode(false);
   };
