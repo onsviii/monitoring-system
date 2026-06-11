@@ -5,9 +5,8 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, db, handleFirestoreError, OperationType } from '../config/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { createProfile, searchPlaces, PlaceCandidateDto } from '../api/profileService';
+import { auth } from '../config/firebase';
+import { createProfile, searchPlaces } from '../api/profileService';
 import { getNiches, NicheDto } from '../api/analysisService';
 import SearchableNicheSelect from '../components/ui/SearchableNicheSelect';
 import LocationMap from '../components/ui/LocationMap';
@@ -25,7 +24,7 @@ import {
 } from 'lucide-react';
 
 interface PlaceCandidate {
-  placeId: string;
+  googlePlaceId: string;
   name: string;
   address: string;
   rating: number;
@@ -143,7 +142,7 @@ export default function ProfileSetup() {
       finalCoords = manualCoords;
     } else if (selectedCandidate) {
       finalName = selectedCandidate.name;
-      finalPlaceId = selectedCandidate.placeId;
+      finalPlaceId = selectedCandidate.googlePlaceId;
       finalAddress = selectedCandidate.address;
       finalCoords = { latitude: selectedCandidate.latitude, longitude: selectedCandidate.longitude };
     } else {
@@ -268,10 +267,10 @@ export default function ProfileSetup() {
               {candidates.length > 0 ? (
                 <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
                   {candidates.map((p) => {
-                    const isSelected = selectedCandidate?.placeId === p.placeId;
+                    const isSelected = selectedCandidate?.googlePlaceId === p.googlePlaceId;
                     return (
                       <div
-                        key={p.placeId}
+                        key={p.googlePlaceId}
                         onClick={() => selectCandidate(p)}
                         className={`border rounded-xl p-3.5 transition-all duration-200 cursor-pointer flex justify-between items-center ${
                           isSelected 
