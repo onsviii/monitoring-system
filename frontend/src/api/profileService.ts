@@ -26,8 +26,7 @@ export interface PlaceCandidateDto {
   address: string;
   rating: number;
   userRatingsTotal: number;
-  latitude: number;
-  longitude: number;
+  location: Location;
 }
 
 export async function createProfile(dto: ProfileDto): Promise<ProfileDto> {
