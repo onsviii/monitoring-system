@@ -114,7 +114,7 @@ export default function ProfileSetup() {
     let finalName = '';
     let finalPlaceId: string | null = null;
     let finalAddress = '';
-    let finalCoords = { latitude: 49.8419, longitude: 24.0315 };
+    let finalCoords = { latitude: null, longitude: null };
 
     if (manualMode) {
       if (!manualName.trim()) {
@@ -134,7 +134,10 @@ export default function ProfileSetup() {
       finalName = selectedCandidate.name;
       finalPlaceId = selectedCandidate.googlePlaceId;
       finalAddress = selectedCandidate.address;
-      finalCoords = { latitude: selectedCandidate.latitude, longitude: selectedCandidate.longitude };
+      finalCoords = {
+        latitude: selectedCandidate.location.latitude,
+        longitude: selectedCandidate.location.longitude
+      };
     } else {
       setErrorMsg('Оберіть заклад зі списку або скористайтеся мапою.');
       setSaving(false);
