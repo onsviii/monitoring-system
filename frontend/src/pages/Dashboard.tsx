@@ -95,6 +95,14 @@ export default function Dashboard() {
         if (profile && profile.businessName && active) {
           setBusinessName(profile.businessName);
           if (profile.nicheCode) setNicheCode(profile.nicheCode);
+
+          if (profile.location) {
+            setLocation({
+              latitude: profile.location.latitude,
+              longitude: profile.location.longitude
+            });
+          }
+
           setHasProfile(true);
           setIsLoadingProfile(false);
           return;
@@ -113,6 +121,14 @@ export default function Dashboard() {
             if (fbName) {
               setBusinessName(fbName);
               if (data.nicheCode) setNicheCode(data.nicheCode);
+
+              if (data.location) {
+                setLocation({
+                  latitude: data.location.latitude,
+                  longitude: data.location.longitude
+                });
+              }
+
               setHasProfile(true);
               setIsLoadingProfile(false);
               return;
@@ -141,7 +157,6 @@ export default function Dashboard() {
     };
   }, []);
 
-  // РЕАЛЬНИЙ ПОЛЛІНГ БЕКЕНДУ
   const startPolling = (sessionId: string) => {
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
 
