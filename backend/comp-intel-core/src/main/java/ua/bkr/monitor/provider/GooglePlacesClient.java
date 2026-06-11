@@ -11,7 +11,7 @@ import ua.bkr.monitor.model.enums.CollectionErrorType;
 import ua.bkr.monitor.model.record.Location;
 import ua.bkr.monitor.provider.dto.GooglePlaceDto;
 import ua.bkr.monitor.provider.dto.GooglePlacesSearchResponse;
-import ua.bkr.monitor.provider.dto.GoogleReviewsResponse;
+import ua.bkr.monitor.provider.dto.SerpApiPlaceResultsResponse;
 import ua.bkr.monitor.provider.mapper.GooglePlacesMapper;
 
 import java.util.HashMap;
@@ -35,6 +35,11 @@ public class GooglePlacesClient {
     @Value("${google.places.details-url}")
     private String PLACE_DETAILS_URL;
 
+    @Value("${serp.api.key}")
+    private String serpApiKey;
+
+    private RestClient serpRestClient;
+
     private static final int MAX_RETRIES = 3;
 
     @PostConstruct
@@ -42,6 +47,7 @@ public class GooglePlacesClient {
         this.restClient = RestClient.builder()
                 .defaultHeader("X-Goog-Api-Key", apiKey)
                 .build();
+        this.serpRestClient = RestClient.create();
     }
 
     public PlaceInfo getPlaceInfo(String placeId) {
@@ -151,21 +157,35 @@ public class GooglePlacesClient {
     }
 
     /**
-     * Збір відгуків для конкретного закладу.
+     * Збір відгуків для конкретного закладу через SerpApi Google Maps Place Results.
      */
     public List<RawReview> fetchReviews(String placeId, UUID sessionId) {
-        String url = String.format(PLACE_DETAILS_URL, placeId);
         Exception lastException = null;
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
-                GoogleReviewsResponse response = restClient.get()
-                        .uri(url)
-                        .header("X-Goog-FieldMask", "reviews")
+                SerpApiPlaceResultsResponse response = serpRestClient.get()
+                        .uri(uriBuilder -> uriBuilder
+                                .scheme("https")
+                                .host("serpapi.com")
+                                .path("/search")
+                                .queryParam("engine", "google_maps")
+                                .queryParam("type", "place")
+                                .queryParam("place_id", placeId)
+                                .queryParam("hl", "uk")
+                                .queryParam("api_key", serpApiKey)
+                                .build())
                         .retrieve()
-                        .body(GoogleReviewsResponse.class);
+                        .body(SerpApiPlaceResultsResponse.class);
 
-                return response != null ? mapper.toRawReviewsFiltered(response.reviews()) : List.of();
+                if (response == null || response.placeResults() == null
+                        || response.placeResults().userReviews() == null) {
+                    return List.of();
+                }
+
+                return mapper.toRawReviewsFromSerpApi(
+                        response.placeResults().userReviews().mostRelevant());
+
             } catch (Exception e) {
                 lastException = e;
                 log.warn("Attempt {}/{} failed for place {}: {}", attempt, MAX_RETRIES, placeId, e.getMessage());

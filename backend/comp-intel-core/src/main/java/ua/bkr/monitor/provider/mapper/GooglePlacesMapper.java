@@ -9,6 +9,7 @@ import ua.bkr.monitor.provider.GooglePlacesClient.PlaceInfo;
 import ua.bkr.monitor.provider.GooglePlacesClient.RawReview;
 import ua.bkr.monitor.provider.dto.GooglePlaceDto;
 import ua.bkr.monitor.provider.dto.GoogleReviewDto;
+import ua.bkr.monitor.provider.dto.SerpApiReviewDto;
 
 import java.util.List;
 
@@ -48,6 +49,16 @@ public interface GooglePlacesMapper {
         return reviews.stream()
                 .map(this::toRawReview)
                 .filter(r -> r.text() != null && !r.text().isBlank())
+                .toList();
+    }
+
+    default List<RawReview> toRawReviewsFromSerpApi(List<SerpApiReviewDto> reviews) {
+        if (reviews == null) {
+            return List.of();
+        }
+        return reviews.stream()
+                .filter(r -> r.snippet() != null && !r.snippet().isBlank())
+                .map(r -> new RawReview(r.snippet(), r.rating(), r.isoDate()))
                 .toList();
     }
 
