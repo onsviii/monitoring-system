@@ -6,7 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import ua.bkr.monitor.provider.dto.AspectClassification;
 import ua.bkr.monitor.model.enums.Aspect;
+import ua.bkr.monitor.provider.dto.AspectResult;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -109,9 +111,4 @@ public class MlServiceClient {
 
     private record MlAnonymizeResponse(List<String> texts) {}
     private record MlClassifyResponse(List<Map<String, AspectResult>> predictions) {}
-
-    /** * Тепер класифікація містить динамічну мапу аспектів, а не 4 жорстких поля.
-     */
-    public record AspectClassification(Map<Aspect, AspectResult> aspects) {}
-    public record AspectResult(int polarity, float confidence) {}
 }
