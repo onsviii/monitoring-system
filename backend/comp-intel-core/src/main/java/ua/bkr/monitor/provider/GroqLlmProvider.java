@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
@@ -33,24 +34,53 @@ public class GroqLlmProvider implements LlmProvider {
 
     @Override
     public String generate(List<Map<String, String>> messages, double temperature) {
-        try {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> response = restClient.post()
-                    .uri(groqUrl)
-                    .body(Map.of(
-                            "model", model,
-                            "messages", messages,
-                            "temperature", temperature,
-                            "max_tokens", 4096
-                    ))
-                    .retrieve()
-                    .body(Map.class);
+        int maxRetries = 3;
 
-            return extractContent(response);
-        } catch (Exception e) {
-            log.error("Groq API error: {}", e.getMessage());
-            throw new RuntimeException("LLM call failed: " + e.getMessage(), e);
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> response = restClient.post()
+                        .uri(groqUrl)
+                        .body(Map.of(
+                                "model", model,
+                                "messages", messages,
+                                "temperature", temperature,
+                                "max_tokens", 4096
+                        ))
+                        .retrieve()
+                        .body(Map.class);
+
+                return extractContent(response);
+
+            } catch (HttpClientErrorException e) {
+                if (e.getStatusCode().value() == 429 && attempt < maxRetries) {
+                    long delay = parseRetryAfter(e, attempt);
+                    log.warn("Groq 429 rate limit, retry {}/{} after {}ms",
+                            attempt, maxRetries, delay);
+                    sleep(delay);
+                } else {
+                    throw new RuntimeException("LLM call failed: " + e.getMessage(), e);
+                }
+            }
         }
+        throw new RuntimeException("LLM call failed after " + maxRetries + " retries");
+    }
+
+    private long parseRetryAfter(HttpClientErrorException e, int attempt) {
+        String retryAfter = e.getResponseHeaders() != null
+                ? e.getResponseHeaders().getFirst("retry-after")
+                : null;
+        if (retryAfter != null) {
+            try {
+                return (long) (Double.parseDouble(retryAfter) * 1000) + 500;
+            } catch (NumberFormatException ignored) {}
+        }
+        return (long) Math.pow(2, attempt) * 2000;
+    }
+
+    private void sleep(long ms) {
+        try { Thread.sleep(ms); }
+        catch (InterruptedException e) { Thread.currentThread().interrupt(); }
     }
 
     @Override
