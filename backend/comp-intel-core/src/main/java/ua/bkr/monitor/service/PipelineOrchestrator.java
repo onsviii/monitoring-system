@@ -68,6 +68,7 @@ public class PipelineOrchestrator {
     @Async
     @Transactional(noRollbackFor = DataCollectionException.class)
     public void runAsync(UUID sessionId, CreateAnalysisRequest request) {
+        log.info("Starting analysis pipeline for session {}", sessionId);
         AnalysisSession session = sessionRepository.findWithUserById(sessionId).orElseThrow();
         session.setStatus(SessionStatus.RUNNING);
         session.setStage(AnalysisStage.COLLECTING_DATA);
@@ -245,6 +246,8 @@ public class PipelineOrchestrator {
             saveAspectSentiments(reviews.get(i), results.get(i));
         }
 
+        log.info("Classified {} reviews", reviews.size());
+
         List<Competitor> competitors = competitorRepository.findBySessionId(session.getId());
         runCharacteristicsExtraction(session, competitors, reviews);
     }
@@ -252,6 +255,7 @@ public class PipelineOrchestrator {
     private void runCharacteristicsExtraction(
             AnalysisSession session, List<Competitor> competitors, List<Review> reviews) {
 
+        log.info("start extraction");
         updateStage(session, AnalysisStage.EXTRACTING_CHARACTERISTICS);
 
         if (reviews.isEmpty()) {
@@ -365,11 +369,13 @@ public class PipelineOrchestrator {
     private void runReportGeneration(
             AnalysisSession session, List<ExtractedCharacteristic> characteristics) {
 
+        log.info("start report generation with {} characteristics", characteristics.size());
         updateStage(session, AnalysisStage.GENERATING_REPORT);
 
         UUID sessionId = session.getId();
 
         AggregatedStatistics stats = statisticsAggregator.aggregate(sessionId);
+        log.info("after aggregator");
 
         List<Review> allReviews = reviewRepository.findByCompetitorSessionId(sessionId);
 

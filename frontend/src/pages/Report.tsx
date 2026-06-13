@@ -173,7 +173,7 @@ export default function Report() {
         const mappedTags = comp.freeCharacteristics ? comp.freeCharacteristics.map(char => ({
           text: char.text,
           type: 'neutral',
-          sources: char.sourceReviewIds ? char.sourceReviewIds.length : 1,
+          sources: char.sourceReviewIds ? char.sourceReviewIds.length : 0,
           sourceReviewIds: char.sourceReviewIds || [],
         })) : [];
 
@@ -262,8 +262,14 @@ export default function Report() {
         return;
       }
 
-      // Сценарій 1: Завантаження за sourceReviewIds (клік на freeCharacteristic)
-      if (drilldownFilter.sourceReviewIds && drilldownFilter.sourceReviewIds.length > 0) {
+      if (drilldownFilter.sourceReviewIds !== undefined) {
+
+        if (drilldownFilter.sourceReviewIds.length === 0) {
+          setSourceReviews([]);
+          setIsLoadingReviews(false);
+          return;
+        }
+
         setIsLoadingReviews(true);
         try {
           const response = await getSourcesByReviewIds(
@@ -271,7 +277,6 @@ export default function Report() {
               drilldownFilter.sourceReviewIds
           );
 
-          const compName = drilldownFilter.competitorName || '';
           const mappedReviews = (response.reviews || []).map((rev: any) => ({
             id: rev.id,
             competitorName: rev.competitorName || drilldownFilter.competitorName || 'Невідомий заклад',
@@ -288,6 +293,7 @@ export default function Report() {
         } finally {
           setIsLoadingReviews(false);
         }
+
         return;
       }
 
