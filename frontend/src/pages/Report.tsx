@@ -24,7 +24,7 @@ import PositioningMatrix from '../components/analytics/PositioningMatrix';
 import SentimentTrendChart from '../components/analytics/SentimentTrendChart';
 import ReportMap from '../components/ui/ReportMap';
 import StrategyAIChat from '../components/analytics/StrategyAIChat';
-import { getAnalysisReport, getAnalysisStatus, CompetitorReportResponse, updateReportName, getAnalysisSources, type ReviewAspects } from '../api/analysisService';
+import { getAnalysisReport, getAnalysisStatus, CompetitorReportResponse, updateReportName, getAnalysisSources, getSourcesByReviewIds, type ReviewAspects } from '../api/analysisService';
 import { auth, db } from '../config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { getProfile } from '../api/profileService';
@@ -165,7 +165,8 @@ export default function Report() {
         const mappedTags = comp.freeCharacteristics ? comp.freeCharacteristics.map(char => ({
           text: char.text,
           type: 'neutral',
-          sources: char.sourceReviewIds ? char.sourceReviewIds.length : 1
+          sources: char.sourceReviewIds ? char.sourceReviewIds.length : 1,
+          sourceReviewIds: char.sourceReviewIds || [],
         })) : [];
 
         return {
@@ -226,7 +227,7 @@ export default function Report() {
 
   // Primary states for interactivity
   const [selectedCompetitor, setSelectedCompetitor] = useState<string | null>(null);
-  const [drilldownFilter, setDrilldownFilter] = useState<{ competitorName: string | null; aspectName: string | null }>({
+  const [drilldownFilter, setDrilldownFilter] = useState<{ competitorName: string | null; aspectName: string | null; sourceReviewIds?: string[] }>({
     competitorName: null,
     aspectName: null,
   });
@@ -247,7 +248,42 @@ export default function Report() {
 
   useEffect(() => {
     async function fetchReviews() {
-      if (!drilldownFilter.competitorName || !drilldownFilter.aspectName || !analysisReport?.sessionId) {
+      if (!analysisReport?.sessionId) {
+        setSourceReviews([]);
+        return;
+      }
+
+      // Сценарій 1: Завантаження за sourceReviewIds (клік на freeCharacteristic)
+      if (drilldownFilter.sourceReviewIds && drilldownFilter.sourceReviewIds.length > 0) {
+        setIsLoadingReviews(true);
+        try {
+          const response = await getSourcesByReviewIds(
+              analysisReport.sessionId,
+              drilldownFilter.sourceReviewIds
+          );
+
+          const compName = drilldownFilter.competitorName || '';
+          const mappedReviews = (response.reviews || []).map((rev: any) => ({
+            id: rev.id,
+            competitorName: compName,
+            sentiment: rev.polarity != null ? (rev.polarity > 0 ? 'positive' : (rev.polarity < 0 ? 'negative' : 'neutral')) : 'neutral',
+            ratingValue: rev.rating,
+            text: rev.text,
+            date: rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('uk-UA') : '',
+          }));
+
+          setSourceReviews(mappedReviews);
+        } catch (err) {
+          console.error("Помилка завантаження першоджерел за ID:", err);
+          setSourceReviews([]);
+        } finally {
+          setIsLoadingReviews(false);
+        }
+        return;
+      }
+
+      // Сценарій 2: Завантаження за аспектом (клік на heatmap cell)
+      if (!drilldownFilter.competitorName || !drilldownFilter.aspectName) {
         setSourceReviews([]);
         return;
       }
@@ -373,7 +409,7 @@ export default function Report() {
       )}
 
       {/* Drilldown Modal (Source Reviews) */}
-      {(drilldownFilter.competitorName || drilldownFilter.aspectName) && (
+      {(drilldownFilter.competitorName || drilldownFilter.aspectName || drilldownFilter.sourceReviewIds) && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
           <div 
             className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity duration-300"
@@ -730,7 +766,7 @@ export default function Report() {
                       return (
                         <button
                           key={tIdx}
-                          onClick={() => setDrilldownFilter({ competitorName: comp.name, aspectName: null })}
+                          onClick={() => setDrilldownFilter({ competitorName: comp.name, aspectName: tag.text, sourceReviewIds: tag.sourceReviewIds })}
                           className={`text-xs px-2.5 py-1 rounded border ${tagColors} duration-150 transition-colors cursor-pointer hover:opacity-90 font-medium`}
                           title={`Базується на ${tag.sources} згадках`}
                         >

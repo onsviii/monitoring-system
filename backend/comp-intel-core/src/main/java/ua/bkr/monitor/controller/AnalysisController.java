@@ -12,6 +12,7 @@ import ua.bkr.monitor.model.enums.Aspect;
 import ua.bkr.monitor.service.AnalysisService;
 import ua.bkr.monitor.service.ReportService;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -90,6 +91,15 @@ public class AnalysisController {
             @RequestParam UUID competitor, @RequestParam Aspect aspect) {
 
         SourcesResponse response = reportService.getSources(userId, id, competitor, aspect);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/sources/by-review-ids")
+    public ResponseEntity<SourcesResponse> getSourcesByReviewIds(
+            @AuthenticationPrincipal String userId, @PathVariable UUID id,
+            @RequestParam List<UUID> ids) {
+
+        SourcesResponse response = reportService.getSourcesByReviewIds(userId, id, ids);
         return ResponseEntity.ok(response);
     }
 

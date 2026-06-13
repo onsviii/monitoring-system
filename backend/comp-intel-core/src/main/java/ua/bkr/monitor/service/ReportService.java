@@ -122,6 +122,26 @@ public class ReportService {
         return new SourcesResponse(sources);
     }
 
+    @Transactional(readOnly = true)
+    public SourcesResponse getSourcesByReviewIds(String userId, UUID sessionId, List<UUID> reviewIds) {
+        getSessionForUser(userId, sessionId);
+
+        List<Review> reviews = reviewRepository.findAllById(reviewIds);
+
+        List<ReviewSourceDto> sources = reviews.stream()
+                .map(review -> new ReviewSourceDto(
+                        review.getId(),
+                        review.getText(),
+                        review.getRating(),
+                        review.getCreatedAt(),
+                        null,
+                        null
+                ))
+                .toList();
+
+        return new SourcesResponse(sources);
+    }
+
     private AnalysisSession getSessionForUser(String userId, UUID sessionId) {
         AnalysisSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found: " + sessionId));

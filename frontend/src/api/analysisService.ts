@@ -221,6 +221,14 @@ export async function getAnalysisSources(id: string, competitorId: string, aspec
   return response.json();
 }
 
+export async function getSourcesByReviewIds(sessionId: string, reviewIds: string[]): Promise<SourcesResponse> {
+  const idsParam = reviewIds.map(id => encodeURIComponent(id)).join(',');
+  const endpoint = `${API_ENDPOINTS.ANALYSIS_SOURCES.replace('{id}', sessionId)}/by-review-ids?ids=${idsParam}`;
+  const response = await authenticatedFetch(endpoint, { method: 'GET' });
+  await handleBackendResponse(response, `Помилка отримання першоджерел за ID відгуків`);
+  return response.json();
+}
+
 // Backend POST /messages returns MessageResponse { id, role, text, timestamp }
 export async function sendChatMessage(analysisId: string, message: string): Promise<ChatMessage> {
   const endpoint = API_ENDPOINTS.CHAT_MESSAGES.replace('{id}', analysisId);

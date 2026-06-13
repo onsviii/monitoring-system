@@ -21,6 +21,7 @@ export interface Competitor {
     text: string;
     type: 'positive' | 'negative' | 'neutral';
     sources: number;
+    sourceReviewIds?: string[];
   }[];
   isOwn?: boolean;
 }
