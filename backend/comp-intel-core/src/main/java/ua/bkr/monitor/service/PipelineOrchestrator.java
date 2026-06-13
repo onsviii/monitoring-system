@@ -364,14 +364,22 @@ public class PipelineOrchestrator {
     private Map<UUID, List<GooglePlacesClient.RawReview>> fetchAllReviews(
             List<Competitor> competitors, UUID sessionId) {
         Map<UUID, List<GooglePlacesClient.RawReview>> result = new HashMap<>();
+        int totalReviews = 0;
+
         for (Competitor c : competitors) {
             try {
-                result.put(c.getId(), googlePlacesClient.fetchReviews(c.getExternalApiId(), sessionId));
+                List<GooglePlacesClient.RawReview> reviews =
+                        googlePlacesClient.fetchReviews(c.getExternalApiId(), sessionId);
+                result.put(c.getId(), reviews);
+                totalReviews += reviews.size();
+                log.info("Fetched {} reviews for '{}'", reviews.size(), c.getName());
             } catch (DataCollectionException e) {
                 persistCollectionError(sessionId, e.getErrorType().name(), e.getMessage());
                 throw e;
             }
         }
+
+        log.info("Total fetched: {} reviews for {} competitors", totalReviews, competitors.size());
         return result;
     }
 
