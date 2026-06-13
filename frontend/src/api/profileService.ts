@@ -38,8 +38,8 @@ export async function createProfile(dto: ProfileDto): Promise<ProfileDto> {
   return response.json();
 }
 
-export async function getProfile(): Promise<ProfileDto> {
-  const response = await authenticatedFetch(API_ENDPOINTS.PROFILE, { method: 'GET' });
+export async function getProfile(signal?: AbortSignal): Promise<ProfileDto> {
+  const response = await authenticatedFetch(API_ENDPOINTS.PROFILE, { method: 'GET', signal });
   await handleBackendResponse(response, 'Не вдалося завантажити профіль з бекенду');
   return response.json();
 }

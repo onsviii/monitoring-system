@@ -190,16 +190,16 @@ export async function createAnalysis(payload: CreateAnalysisRequest): Promise<An
   return response.json();
 }
 
-export async function getAnalysisStatus(id: string): Promise<AnalysisStatusResponse> {
+export async function getAnalysisStatus(id: string, signal?: AbortSignal): Promise<AnalysisStatusResponse> {
   const endpoint = API_ENDPOINTS.ANALYSIS_STATUS.replace('{id}', id);
-  const response = await authenticatedFetch(endpoint, { method: 'GET' });
+  const response = await authenticatedFetch(endpoint, { method: 'GET', signal });
   await handleBackendResponse(response, `Помилка отримання статусу аналізу [ID: ${id}]`);
   return response.json();
 }
 
-export async function getAnalysisReport(id: string): Promise<CompetitorReportResponse> {
+export async function getAnalysisReport(id: string, signal?: AbortSignal): Promise<CompetitorReportResponse> {
   const endpoint = API_ENDPOINTS.ANALYSIS_REPORT.replace('{id}', id);
-  const response = await authenticatedFetch(endpoint, { method: 'GET' });
+  const response = await authenticatedFetch(endpoint, { method: 'GET', signal });
   await handleBackendResponse(response, `Помилка отримання звіту аналізу [ID: ${id}]`);
   return response.json();
 }

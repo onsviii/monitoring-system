@@ -25,6 +25,9 @@ import SentimentTrendChart from '../components/analytics/SentimentTrendChart';
 import ReportMap from '../components/ui/ReportMap';
 import StrategyAIChat from '../components/analytics/StrategyAIChat';
 import { getAnalysisReport, getAnalysisStatus, CompetitorReportResponse, updateReportName, getAnalysisSources } from '../api/analysisService';
+import { auth, db } from '../config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { getProfile } from '../api/profileService';
 
 const ChartSkeletonLoader = ({ text }: { text: string }) => (
   <div className="w-full h-64 flex flex-col items-center justify-center space-y-3.5 bg-gray-50/50 rounded-xl animate-pulse border border-dashed border-gray-200 p-4">
@@ -50,7 +53,7 @@ export default function Report() {
   const [isSavingReportName, setIsSavingReportName] = useState(false);
 
   useEffect(() => {
-    let active = true;
+    const abortController = new AbortController();
 
     async function loadReportData() {
       // 1. Блокування 1: Немає ID сесії
@@ -60,11 +63,11 @@ export default function Report() {
         return;
       }
 
-      if (active) setIsLoadingReport(true);
+      setIsLoadingReport(true);
 
       try {
         // 2. Блокування 2: Перевіряємо статус сесії на бекенді
-        const statusData = await getAnalysisStatus(lastId);
+        const statusData = await getAnalysisStatus(lastId, abortController.signal);
 
         // Якщо аналіз ще йде або впав - повертаємо на дашборд (там включиться поллінг або екран помилки)
         if (statusData.status !== 'COMPLETED') {
@@ -73,28 +76,62 @@ export default function Report() {
         }
 
         // 3. Якщо все ок — завантажуємо сам звіт
-        const report = await getAnalysisReport(lastId);
-        if (report && active) {
-          setAnalysisReport(report);
-        }
+        const report = await getAnalysisReport(lastId, abortController.signal);
+        setAnalysisReport(report);
       } catch (err) {
+        if (err.name === 'AbortError') {
+          console.log('Мережевий запит скасовано через демонтаж компонента');
+          return;
+        }
+
         console.warn("Помилка перевірки статусу або завантаження звіту:", err);
-        // Якщо бекенд повернув 404 (наприклад, стару сесію видалили), теж кидаємо на головну
         navigate('/dashboard', { replace: true });
       } finally {
-        if (active) setIsLoadingReport(false);
+        if (!abortController.signal.aborted) {
+          setIsLoadingReport(false);
+        }
       }
     }
 
-    async function loadName() {
-      // ... [ТУТ ЗАЛИШАЄТЬСЯ ТВІЙ КОД ЗАВАНТАЖЕННЯ businessName З getProfile ТА Firestore] ...
+    async function loadName(signal: AbortSignal) {
+      try {
+        const profile = await getProfile(signal);
+
+        if (profile && profile.businessName && !signal.aborted) {
+          setBusinessName(profile.businessName);
+          return;
+        }
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+        console.warn("Не вдалося завантажити профіль з бекенду:", err);
+      }
+
+      if (signal.aborted) return;
+
+      // 2. Фолбек на Firestore
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const userDocSnap = await getDoc(doc(db, 'users', currentUser.uid));
+
+          if (userDocSnap.exists() && !signal.aborted) {
+            const data = userDocSnap.data();
+            if (data.businessName) {
+              setBusinessName(data.businessName);
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Не вдалося завантажити профіль з Firestore:", err);
+      }
     }
 
-    loadName();
+    loadName(abortController.signal);
     loadReportData();
 
     return () => {
-      active = false;
+      abortController.abort();
     };
   }, [navigate]);
 
