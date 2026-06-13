@@ -6,7 +6,8 @@ import ua.bkr.monitor.model.ChatMessage;
 import java.util.List;
 import java.util.UUID;
 
-public interface DialogueMessageRepository extends JpaRepository<ChatMessage, UUID> {
+import org.springframework.data.domain.Limit;
 
-    List<ChatMessage> findBySessionIdOrderByTimestampAsc(UUID sessionId);
+public interface DialogueMessageRepository extends JpaRepository<ChatMessage, UUID> {
+    List<ChatMessage> findBySessionIdOrderByTimestampAsc(UUID sessionId, Limit limit);
 }

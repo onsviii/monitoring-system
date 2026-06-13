@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Limit;
 import ua.bkr.monitor.dto.MessageResponse;
 import ua.bkr.monitor.dto.SendMessageRequest;
 import ua.bkr.monitor.exception.AccessDeniedException;
@@ -90,7 +91,7 @@ class ChatServiceTest {
 
         ChatMessage m1 = chatMessage(UUID.randomUUID(), ChatRole.USER, "Hello", LocalDateTime.of(2024, 1, 1, 10, 0));
         ChatMessage m2 = chatMessage(UUID.randomUUID(), ChatRole.ASSISTANT, "Hi!", LocalDateTime.of(2024, 1, 1, 10, 1));
-        when(messageRepository.findBySessionIdOrderByTimestampAsc(SESSION_ID)).thenReturn(List.of(m1, m2));
+        when(messageRepository.findBySessionIdOrderByTimestampAsc(SESSION_ID, Limit.unlimited())).thenReturn(List.of(m1, m2));
 
         List<MessageResponse> result = chatService.getHistory(USER_ID, SESSION_ID);
 
@@ -105,7 +106,7 @@ class ChatServiceTest {
     void getHistory_returnsEmptyList_whenNoMessages() {
         AnalysisSession session = sessionOwnedBy(USER_ID);
         when(sessionRepository.findById(SESSION_ID)).thenReturn(Optional.of(session));
-        when(messageRepository.findBySessionIdOrderByTimestampAsc(SESSION_ID)).thenReturn(List.of());
+        when(messageRepository.findBySessionIdOrderByTimestampAsc(SESSION_ID, Limit.unlimited())).thenReturn(List.of());
 
         List<MessageResponse> result = chatService.getHistory(USER_ID, SESSION_ID);
 

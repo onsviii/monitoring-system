@@ -1,6 +1,7 @@
 package ua.bkr.monitor.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ua.bkr.monitor.dto.AggregatedStatistics;
@@ -39,7 +40,7 @@ public class ChatService {
         AnalysisSession session = getSessionForUser(userId, sessionId);
 
         ChatMessage userMsg = buildMessage(session, ChatRole.USER, request.text());
-        List<ChatMessage> history = messageRepository.findBySessionIdOrderByTimestampAsc(sessionId);
+        List<ChatMessage> history = messageRepository.findBySessionIdOrderByTimestampAsc(sessionId, Limit.of(20));
         history.add(userMsg);
 
         AnalyticalReport report = reportRepository.findBySessionId(sessionId)
@@ -66,7 +67,7 @@ public class ChatService {
     public List<MessageResponse> getHistory(String userId, UUID sessionId) {
         getSessionForUser(userId, sessionId);
 
-        return messageRepository.findBySessionIdOrderByTimestampAsc(sessionId)
+        return messageRepository.findBySessionIdOrderByTimestampAsc(sessionId, Limit.unlimited())
                 .stream()
                 .map(m -> new MessageResponse(m.getId(), m.getRole(), m.getText(), m.getTimestamp()))
                 .toList();
