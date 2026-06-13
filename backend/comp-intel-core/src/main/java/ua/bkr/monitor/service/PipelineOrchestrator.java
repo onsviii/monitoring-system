@@ -375,7 +375,7 @@ public class PipelineOrchestrator {
 
     private void updateStage(AnalysisSession session, AnalysisStage stage) {
         session.setStage(stage);
-        sessionRepository.save(session);
+        sessionRepository.saveAndFlush(session);
     }
 
     private void failSession(AnalysisSession session, String errorType, String message) {
