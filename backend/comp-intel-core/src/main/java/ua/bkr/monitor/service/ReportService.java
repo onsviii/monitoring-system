@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ua.bkr.monitor.dto.*;
 import ua.bkr.monitor.dto.SourcesResponse.ReviewSourceDto;
 import ua.bkr.monitor.mapper.ReportMapper;
+import ua.bkr.monitor.mapper.ReviewMapper;
 import ua.bkr.monitor.model.*;
 import ua.bkr.monitor.model.enums.Aspect;
 import ua.bkr.monitor.repository.*;
@@ -29,6 +30,7 @@ public class ReportService {
     private final RecommendationSourceRepository recommendationSourceRepository;
     private final UserProfileRepository userProfileRepository;
     private final ReportMapper reportMapper;
+    private final ReviewMapper reviewMapper;
 
 
     @Transactional(readOnly = true)
@@ -106,18 +108,7 @@ public class ReportService {
 
         List<ReviewSourceDto> sources = sentiments.stream()
                 .filter(s -> s.getPolarity() != null && s.getPolarity() != 0)
-                .map(s -> {
-                    Review review = s.getReview();
-                    return new ReviewSourceDto(
-                            review.getId(),
-                            review.getCompetitor().getName(),
-                            review.getText(),
-                            review.getRating(),
-                            review.getCreatedAt(),
-                            s.getPolarity(),
-                            s.getConfidenceScore()
-                    );
-                })
+                .map(s -> reviewMapper.toDtoWithSentiment(s.getReview(), s))
                 .toList();
 
         return new SourcesResponse(sources);
@@ -128,17 +119,8 @@ public class ReportService {
         getSessionForUser(userId, sessionId);
 
         List<Review> reviews = reviewRepository.findAllWithCompetitorByIdIn(reviewIds);
-
         List<ReviewSourceDto> sources = reviews.stream()
-                .map(review -> new ReviewSourceDto(
-                        review.getId(),
-                        review.getCompetitor().getName(),
-                        review.getText(),
-                        review.getRating(),
-                        review.getCreatedAt(),
-                        null,
-                        null
-                ))
+                .map(reviewMapper::toDto)
                 .toList();
 
         return new SourcesResponse(sources);
