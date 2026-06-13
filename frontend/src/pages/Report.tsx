@@ -266,7 +266,7 @@ export default function Report() {
           const compName = drilldownFilter.competitorName || '';
           const mappedReviews = (response.reviews || []).map((rev: any) => ({
             id: rev.id,
-            competitorName: compName,
+            competitorName: rev.competitorName || drilldownFilter.competitorName || 'Невідомий заклад',
             sentiment: rev.polarity != null ? (rev.polarity > 0 ? 'positive' : (rev.polarity < 0 ? 'negative' : 'neutral')) : 'neutral',
             ratingValue: rev.rating,
             text: rev.text,
@@ -421,8 +421,14 @@ export default function Report() {
               <div className="flex items-center gap-2.5">
                 <FileText className="w-5 h-5 text-amber-700" />
                 <h4 className="font-bold text-sm text-gray-900">
-                  Першоджерела відгуків:
-                  {drilldownFilter.competitorName && <span className="text-blue-700 font-bold tracking-tight ml-1">«{drilldownFilter.competitorName}»</span>}
+                  Першоджерела:
+
+                  {drilldownFilter.competitorName && (
+                      <span className="text-blue-700 font-bold tracking-tight ml-1">
+                        «{drilldownFilter.competitorName}»
+                      </span>
+                  )}
+
                   {drilldownFilter.aspectName && (!drilldownFilter.sourceReviewIds || drilldownFilter.sourceReviewIds.length === 0) && (
                       <span className="text-gray-600 ml-1">
                         ● Аспект: <span className="font-bold text-indigo-700">{drilldownFilter.aspectName}</span>
@@ -460,9 +466,10 @@ export default function Report() {
                     {sourceReviews.map((rev) => (
                     <div key={rev.id} className="bg-white p-4 rounded-xl border border-gray-150 relative text-[13px] leading-relaxed shadow-3xs">
                       <div className="flex justify-between items-center mb-2 border-b border-gray-50 pb-2">
-                        <span className="font-bold text-gray-800 text-xs uppercase tracking-wider">{rev.competitorName}</span>
+                        <span className="font-bold text-gray-800 text-xs uppercase tracking-wider">
+                          {rev.competitorName}
+                        </span>
                         <div className="flex items-center gap-2">
-                          {/* Показуємо бейджі тональності ТІЛЬКИ якщо це НЕ вільна характеристика */}
                           {(!drilldownFilter.sourceReviewIds || drilldownFilter.sourceReviewIds.length === 0) && (
                               <>
                                 {rev.sentiment === 'positive' && (
