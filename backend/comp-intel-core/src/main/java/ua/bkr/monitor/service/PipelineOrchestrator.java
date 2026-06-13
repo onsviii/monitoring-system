@@ -205,6 +205,12 @@ public class PipelineOrchestrator {
                     rawReviews.getOrDefault(competitor.getId(), List.of());
 
             List<String> texts = raws.stream().map(GooglePlacesClient.RawReview::text).toList();
+
+            if (texts.isEmpty()) {
+                log.warn("No reviews to anonymization for session {}", session.getId());
+                runClassification(session, List.of());
+            }
+
             List<String> anonymized = mlServiceClient.anonymize(texts);
 
             for (int i = 0; i < anonymized.size(); i++) {
@@ -223,6 +229,13 @@ public class PipelineOrchestrator {
     private void runClassification(AnalysisSession session, List<Review> reviews) {
         updateStage(session, AnalysisStage.CLASSIFYING);
 
+        if (reviews.isEmpty()) {
+            log.warn("No reviews to classify for session {}", session.getId());
+            List<Competitor> competitors = competitorRepository.findBySessionId(session.getId());
+            runCharacteristicsExtraction(session, competitors, reviews);
+            return;
+        }
+
         List<String> texts = reviews.stream().map(Review::getText).toList();
         List<AspectClassification> results = mlServiceClient.classify(texts);
 
@@ -239,6 +252,12 @@ public class PipelineOrchestrator {
 
         updateStage(session, AnalysisStage.EXTRACTING_CHARACTERISTICS);
 
+        if (reviews.isEmpty()) {
+            log.warn("No reviews for extraction, skipping to report generation");
+            runReportGeneration(session, List.of());
+            return;
+        }
+
         List<ExtractedCharacteristic> allCharacteristics = new ArrayList<>();
 
         for (Competitor competitor : competitors) {
@@ -246,13 +265,21 @@ public class PipelineOrchestrator {
                     .filter(r -> r.getCompetitor().getId().equals(competitor.getId()))
                     .toList();
 
+            if (compReviews.isEmpty()) {
+                log.info("No reviews for competitor '{}', skipping characteristics extraction", competitor.getName());
+                continue;
+            }
+
             List<IndexedReview> indexed = IntStream.range(0, compReviews.size())
                     .mapToObj(i -> new IndexedReview(i, compReviews.get(i).getText()))
                     .toList();
 
+            log.info("Extracting characteristics for competitor '{}', {} reviews", competitor.getName(), indexed.size());
             List<ExtractedCharacteristic> characteristics =
                     llmAnalysisService.extractCharacteristics(
                             competitor.getName(), indexed, session.getId());
+
+            log.info("Extracted {} characteristics for competitor '{}'", characteristics.size(), competitor.getName());
 
             allCharacteristics.addAll(characteristics);
             saveCharacteristics(competitor, compReviews, characteristics);
@@ -324,6 +351,12 @@ public class PipelineOrchestrator {
 
         List<Review> allReviews = reviewRepository.findByCompetitorSessionId(sessionId);
 
+        if (allReviews.isEmpty()) {
+            log.warn("No reviews found, generating empty report for session {}", sessionId);
+            saveEmptyReport(session);
+            return;
+        }
+
         List<IndexedReview> indexedAll = IntStream.range(0, allReviews.size())
                 .mapToObj(i -> new IndexedReview(i, allReviews.get(i).getText()))
                 .toList();
@@ -355,6 +388,19 @@ public class PipelineOrchestrator {
                 }
             }
         }
+
+        session.setStatus(SessionStatus.COMPLETED);
+        session.setStage(null);
+        sessionRepository.save(session);
+    }
+
+    private void saveEmptyReport(AnalysisSession session) {
+        AnalyticalReport report = new AnalyticalReport();
+        report.setName(session.getReportName());
+        report.setSession(session);
+        report.setGeneratedAt(LocalDateTime.now());
+        report.setAiMarked(false);
+        reportRepository.save(report);
 
         session.setStatus(SessionStatus.COMPLETED);
         session.setStage(null);
