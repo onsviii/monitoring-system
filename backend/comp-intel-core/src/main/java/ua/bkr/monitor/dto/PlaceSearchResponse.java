@@ -13,6 +13,7 @@ public record PlaceSearchResponse(
             String name,
             String address,
             Double rating,
+            Integer userRatingCount,
             Location location
     ) {}
 }
