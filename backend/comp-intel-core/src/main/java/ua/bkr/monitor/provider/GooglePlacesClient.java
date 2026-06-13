@@ -1,5 +1,6 @@
 package ua.bkr.monitor.provider;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,10 +18,7 @@ import ua.bkr.monitor.provider.dto.GooglePlacesSearchResponse;
 import ua.bkr.monitor.provider.dto.SerpApiReviewDto;
 import ua.bkr.monitor.provider.mapper.GooglePlacesMapper;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -40,6 +38,9 @@ public class GooglePlacesClient {
 
     @Value("${serp.api.key}")
     private String serpApiKey;
+
+    @Value("${serp.api.reviews.max-pages:2}")
+    private int maxPages;
 
     private RestClient serpRestClient;
     private final ObjectMapper objectMapper;
@@ -164,47 +165,88 @@ public class GooglePlacesClient {
      * Збір відгуків для конкретного закладу через SerpApi Google Maps Place Results.
      */
     public List<RawReview> fetchReviews(String placeId, UUID sessionId) {
+        List<SerpApiReviewDto> allReviews = new ArrayList<>();
+        String nextPageToken = null;
+        int page = 0;
+
+        while (page < maxPages) {
+            final String currentToken = nextPageToken;
+
+            JsonNode responseNode = fetchPage(placeId, sessionId, currentToken);
+
+            if (responseNode == null || !responseNode.hasNonNull("reviews")) {
+                break;
+            }
+
+            List<SerpApiReviewDto> pageReviews = parseReviews(responseNode);
+            if (pageReviews.isEmpty()) {
+                break;
+            }
+
+            allReviews.addAll(pageReviews);
+            page++;
+
+            nextPageToken = extractNextPageToken(responseNode);
+            if (nextPageToken == null) {
+                break;
+            }
+        }
+
+        return mapper.toRawReviewsFromSerpApi(allReviews);
+    }
+
+    private JsonNode fetchPage(String placeId, UUID sessionId, String nextPageToken) {
         Exception lastException = null;
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
-                JsonNode responseNode = serpRestClient.get()
-                        .uri(uriBuilder -> uriBuilder
-                                .scheme("https")
-                                .host("serpapi.com")
-                                .path("/search")
-                                .queryParam("engine", "google_maps_reviews")
-                                .queryParam("place_id", placeId)
-                                .queryParam("hl", "uk")
-                                .queryParam("api_key", serpApiKey)
-                                .build())
+                return serpRestClient.get()
+                        .uri(uriBuilder -> {
+                            var b = uriBuilder
+                                    .scheme("https")
+                                    .host("serpapi.com")
+                                    .path("/search")
+                                    .queryParam("engine", "google_maps_reviews")
+                                    .queryParam("place_id", placeId)
+                                    .queryParam("hl", "uk")
+                                    .queryParam("api_key", serpApiKey);
+
+                            if (nextPageToken != null) {
+                                b.queryParam("next_page_token", nextPageToken);
+                                b.queryParam("num", 20);
+                            }
+
+                            return b.build();
+                        })
                         .retrieve()
                         .body(JsonNode.class);
-
-                if (responseNode == null || !responseNode.hasNonNull("reviews")) {
-                    return List.of();
-                }
-
-                List<SerpApiReviewDto> serpReviews = objectMapper.treeToValue(
-                        responseNode.get("reviews"), new TypeReference<List<SerpApiReviewDto>>() {}
-                );
-
-                return mapper.toRawReviewsFromSerpApi(serpReviews);
             } catch (Exception e) {
                 lastException = e;
-                log.warn("Attempt {}/{} failed for place {}: {}", attempt, MAX_RETRIES, placeId, e.getMessage());
-
+                log.warn("Attempt {}/{} failed for place {}: {}",
+                        attempt, MAX_RETRIES, placeId, e.getMessage());
                 if (attempt < MAX_RETRIES) {
                     exponentialBackoff(attempt);
                 }
             }
         }
 
-        CollectionErrorType type = CollectionErrorType.REVIEW_FETCH_FAILED;
-        String errorMsg = lastException.getMessage();
+        logError(sessionId, CollectionErrorType.REVIEW_FETCH_FAILED, lastException.getMessage());
+        throw new DataCollectionException(
+                CollectionErrorType.REVIEW_FETCH_FAILED, placeId, lastException.getMessage());
+    }
 
-        logError(sessionId, type, errorMsg);
-        throw new DataCollectionException(type, placeId, errorMsg);
+    private String extractNextPageToken(JsonNode responseNode) {
+        JsonNode pagination = responseNode.path("serpapi_pagination");
+        if (pagination.hasNonNull("next_page_token")) {
+            return pagination.get("next_page_token").asString();
+        }
+        return null;
+    }
+
+    private List<SerpApiReviewDto> parseReviews(JsonNode responseNode) {
+        return objectMapper.treeToValue(
+                responseNode.get("reviews"), new TypeReference<List<SerpApiReviewDto>>() {}
+        );
     }
 
     private List<PlaceInfo> executeSearchRequest(Map<String, Object> body) {
