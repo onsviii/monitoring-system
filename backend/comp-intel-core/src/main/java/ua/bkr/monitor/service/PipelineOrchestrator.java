@@ -2,6 +2,7 @@ package ua.bkr.monitor.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -55,6 +56,7 @@ public class PipelineOrchestrator {
     private final CharacteristicSourceRepository characteristicSourceRepository;
     private final RecommendationRepository recommendationRepository;
     private final RecommendationSourceRepository recommendationSourceRepository;
+    private final ObjectProvider<PipelineOrchestrator> selfProvider;
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -75,10 +77,10 @@ public class PipelineOrchestrator {
             runFromCollecting(session, request);
         } catch (DataCollectionException e) {
             log.warn("Data collection error for session {}: {}", sessionId, e.getMessage());
-            failSession(session, e.getErrorType().name(), e.getMessage());
+            selfProvider.getObject().failSession(session, e.getErrorType().name(), e.getMessage());
         } catch (Exception e) {
             log.warn("Data collection error for session {}: {}", sessionId, e.getMessage());
-            failSession(session, "UNKNOWN", e.getMessage());
+            selfProvider.getObject().failSession(session, "UNKNOWN", e.getMessage());
         }
     }
 
@@ -98,9 +100,9 @@ public class PipelineOrchestrator {
                 case GENERATING_REPORT -> runFromGenerating(session);
             }
         } catch (DataCollectionException e) {
-            failSession(session, e.getErrorType().name(), e.getMessage());
+            selfProvider.getObject().failSession(session, e.getErrorType().name(), e.getMessage());
         } catch (Exception e) {
-            failSession(session, "UNKNOWN", e.getMessage());
+            selfProvider.getObject().failSession(session, "UNKNOWN", e.getMessage());
         }
     }
 
@@ -380,7 +382,8 @@ public class PipelineOrchestrator {
         sessionRepository.saveAndFlush(session);
     }
 
-    private void failSession(AnalysisSession session, String errorType, String message) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void failSession(AnalysisSession session, String errorType, String message) {
         session.setStatus(SessionStatus.FAILED);
         sessionRepository.save(session);
 
