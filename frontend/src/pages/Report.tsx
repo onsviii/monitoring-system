@@ -102,7 +102,11 @@ export default function Report() {
         if (profile && !signal.aborted) {
           if (profile.businessName) setBusinessName(profile.businessName);
           if (profile.address) setBusinessAddress(profile.address);
-          if (profile.nicheCode) setBusinessNiche(profile.nicheCode);
+          if (profile.nicheName) {
+            setBusinessNiche(profile.nicheName);
+          } else if (profile.nicheCode) {
+            setBusinessNiche(profile.nicheCode);
+          }
           return;
         }
       } catch (err: any) {

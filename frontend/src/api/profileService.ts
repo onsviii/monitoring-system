@@ -15,6 +15,7 @@ export interface Location {
 export interface ProfileDto {
   businessName: string;
   nicheCode: string;
+  nicheName?: string;
   googlePlaceId?: string | null;
   address?: string;
   location: Location;
