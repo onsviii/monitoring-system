@@ -44,7 +44,9 @@ const ChartSkeletonLoader = ({ text }: { text: string }) => (
 export default function Report() {
   const navigate = useNavigate();
 
-  const [businessName, setBusinessName] = useState('Копальня кави');
+  const [businessName, setBusinessName] = useState<string>('');
+  const [businessAddress, setBusinessAddress] = useState<string>('');
+  const [businessNiche, setBusinessNiche] = useState<string>('');
   const [analysisReport, setAnalysisReport] = useState<CompetitorReportResponse | null>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [isEditingReportName, setIsEditingReportName] = useState(false);
@@ -97,8 +99,10 @@ export default function Report() {
       try {
         const profile = await getProfile(signal);
 
-        if (profile && profile.businessName && !signal.aborted) {
-          setBusinessName(profile.businessName);
+        if (profile && !signal.aborted) {
+          if (profile.businessName) setBusinessName(profile.businessName);
+          if (profile.address) setBusinessAddress(profile.address);
+          if (profile.nicheCode) setBusinessNiche(profile.nicheCode);
           return;
         }
       } catch (err: any) {
@@ -116,10 +120,10 @@ export default function Report() {
 
           if (userDocSnap.exists() && !signal.aborted) {
             const data = userDocSnap.data();
-            if (data.businessName) {
-              setBusinessName(data.businessName);
-              return;
-            }
+            if (data.businessName) setBusinessName(data.businessName);
+            if (data.address) setBusinessAddress(data.address);
+            if (data.nicheCode || data.niche) setBusinessNiche(data.nicheCode || data.niche);
+            return;
           }
         }
       } catch (err) {
@@ -556,10 +560,12 @@ export default function Report() {
               <p className="text-xs text-rose-600 mt-1">{reportNameError}</p>
             )}
             <h1 className="text-2xl font-bold tracking-tight text-gray-900">{businessName}</h1>
-            <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-1 font-medium">
-              <span className="w-2 h-2 rounded-full bg-blue-600 block shrink-0" />
-              Кав'ярня · Центр міста, площа Ринок, Львів, Україна
-            </p>
+            {(businessNiche || businessAddress) && (
+                <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-1 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-blue-600 block shrink-0" />
+                  {[businessNiche, businessAddress].filter(Boolean).join(' · ')}
+                </p>
+            )}
           </div>
           <div className="bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 text-xs text-gray-500 font-mono">
             ID Аналізу: <span className="font-semibold text-gray-700">#{analysisReport?.sessionId ? analysisReport.sessionId.substring(0, 8) : 'unknown'}</span>
