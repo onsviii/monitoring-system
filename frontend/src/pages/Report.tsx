@@ -24,7 +24,7 @@ import PositioningMatrix from '../components/analytics/PositioningMatrix';
 import SentimentTrendChart from '../components/analytics/SentimentTrendChart';
 import ReportMap from '../components/ui/ReportMap';
 import StrategyAIChat from '../components/analytics/StrategyAIChat';
-import { getAnalysisReport, getAnalysisStatus, CompetitorReportResponse, updateReportName } from '../api/analysisService';
+import { getAnalysisReport, getAnalysisStatus, CompetitorReportResponse, updateReportName, getAnalysisSources } from '../api/analysisService';
 
 const ChartSkeletonLoader = ({ text }: { text: string }) => (
   <div className="w-full h-64 flex flex-col items-center justify-center space-y-3.5 bg-gray-50/50 rounded-xl animate-pulse border border-dashed border-gray-200 p-4">
@@ -118,7 +118,18 @@ export default function Report() {
           location: 0,
         };
 
-        const aspects = matchedRadar ? matchedRadar.aspects : defaultAspects;
+        const aspects = matchedRadar ? {
+          service: matchedRadar.aspects.SERVICE ?? 0,
+          product_quality: matchedRadar.aspects.PRODUCT_QUALITY ?? 0,
+          price: matchedRadar.aspects.PRICE ?? 0,
+          location: matchedRadar.aspects.LOCATION ?? 0,
+        } : defaultAspects;
+
+        const mappedTags = comp.freeCharacteristics ? comp.freeCharacteristics.map(char => ({
+          text: char.text,
+          type: 'neutral',
+          sources: char.sourceReviewIds ? char.sourceReviewIds.length : 1
+        })) : [];
 
         return {
           id: comp.id,
@@ -131,7 +142,7 @@ export default function Report() {
           latitude: comp.isOwn ? 49.8397 : 49.8397 + (Math.sin(comp.id.charCodeAt(0)) * 0.02),
           longitude: comp.isOwn ? 24.0297 : 24.0297 + (Math.cos(comp.id.charCodeAt(0)) * 0.02),
           aspects: aspects,
-          uniqueTags: [],
+          uniqueTags: mappedTags,
           isOwn: comp.isOwn || false,
         };
       });
@@ -161,20 +172,15 @@ export default function Report() {
     return undefined;
   }, [analysisReport]);
 
-  const reviews = React.useMemo(() => {
-    // В реальному додатку тут мають бути відгуки від бекенду
-    return [];
-  }, [businessName]);
-
   const recommendations = React.useMemo(() => {
     if (analysisReport && analysisReport.recommendations && analysisReport.recommendations.length > 0) {
       return analysisReport.recommendations.map((rec, idx) => ({
-        id: `rec_dyn_${idx}`,
-        title: rec.title || 'Рекомендація ШІ',
-        description: rec.description,
+        id: rec.id || `rec_dyn_${idx}`,
+        title: rec.title || 'Стратегічна рекомендація',
+        description: rec.text,
         impact: rec.priority === 'HIGH' ? 'HIGH' : (rec.priority === 'MEDIUM' ? 'MEDIUM' : 'LOW'),
         aspect: 'service',
-        sourcesCount: 12,
+        sourcesCount: rec.sourceReviewIds ? rec.sourceReviewIds.length : 0,
         references: [],
       }));
     }
@@ -192,12 +198,47 @@ export default function Report() {
   
   const [activeChartTab, setActiveChartTab] = useState<'radar' | 'heatmap' | 'matrix' | 'trends'>('radar');
 
-  // Filter reviews matching the selected cell or general select
-  const filteredReviews = reviews.filter((rev) => {
-    if (drilldownFilter.competitorName && rev.competitorName !== drilldownFilter.competitorName) return false;
-    if (drilldownFilter.aspectName && rev.aspect.toLowerCase() !== drilldownFilter.aspectName.toLowerCase()) return false;
-    return true;
-  });
+  const [sourceReviews, setSourceReviews] = useState<any[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+
+  useEffect(() => {
+    async function fetchReviews() {
+      if (!drilldownFilter.competitorName || !drilldownFilter.aspectName || !analysisReport?.sessionId) {
+        setSourceReviews([]);
+        return;
+      }
+
+      const comp = competitors.find(c => c.name === drilldownFilter.competitorName);
+      if (!comp) return;
+
+      setIsLoadingReviews(true);
+      try {
+        const response = await getAnalysisSources(
+            analysisReport.sessionId,
+            comp.id,
+            drilldownFilter.aspectName.toUpperCase()
+        );
+
+        const mappedReviews = (response.reviews || []).map((rev: any) => ({
+          id: rev.id,
+          competitorName: comp.name,
+          sentiment: rev.polarity > 0 ? 'positive' : (rev.polarity < 0 ? 'negative' : 'neutral'),
+          ratingValue: rev.rating,
+          text: rev.text,
+          date: new Date(rev.createdAt).toLocaleDateString('uk-UA'),
+        }));
+
+        setSourceReviews(mappedReviews);
+      } catch (err) {
+        console.error("Помилка завантаження першоджерел:", err);
+        setSourceReviews([]);
+      } finally {
+        setIsLoadingReviews(false);
+      }
+    }
+
+    fetchReviews();
+  }, [drilldownFilter, analysisReport, competitors]);
 
   const clearDrilldown = () => {
     setDrilldownFilter({ competitorName: null, aspectName: null });
@@ -314,15 +355,20 @@ export default function Report() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-5 overflow-y-auto bg-gray-50/30">
-              {filteredReviews.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-sm text-gray-500 italic">Немає точних завантажених цитат для вибраного фільтру.</p>
-                </div>
+              {isLoadingReviews ? (
+                  <div className="text-center py-12 space-y-3">
+                    <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto" />
+                    <p className="text-sm text-gray-500 font-medium">Завантаження першоджерел з бази...</p>
+                  </div>
+              ) : sourceReviews.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-sm text-gray-500 italic">Немає точних завантажених цитат для вибраного фільтру.</p>
+                  </div>
               ) : (
-                <div className="grid grid-cols-1 gap-3.5">
-                  {filteredReviews.map((rev) => (
+                  <div className="grid grid-cols-1 gap-3.5">
+                    {sourceReviews.map((rev) => (
                     <div key={rev.id} className="bg-white p-4 rounded-xl border border-gray-150 relative text-[13px] leading-relaxed shadow-3xs">
                       <div className="flex justify-between items-center mb-2 border-b border-gray-50 pb-2">
                         <span className="font-bold text-gray-800 text-xs uppercase tracking-wider">{rev.competitorName}</span>
