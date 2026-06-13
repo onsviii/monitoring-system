@@ -179,6 +179,36 @@ export default function Dashboard() {
     }, 3000);
   };
 
+  useEffect(() => {
+    async function resumePendingAnalysis() {
+      const lastId = localStorage.getItem('last_analysis_id');
+      if (!lastId) return;
+
+      try {
+        const statusData = await getAnalysisStatus(lastId);
+
+        if (statusData.status === 'PENDING' || statusData.status === 'RUNNING') {
+          setCurrentSessionId(lastId);
+          setCurrentStatus(statusData.status);
+          setCurrentStage(statusData.stage || null);
+          setStep('polling');
+          startPolling(lastId);
+        }
+        else if (statusData.status === 'FAILED') {
+          setCurrentSessionId(lastId);
+          setCurrentStatus(statusData.status);
+          setCurrentStage(statusData.stage || null);
+          setIsFailed(true);
+          setStep('polling');
+        }
+      } catch (err) {
+        console.warn("Не вдалося відновити стан попередньої сесії:", err);
+      }
+    }
+
+    resumePendingAnalysis();
+  }, []);
+
   // Крок 1: Запит на прев'ю конкурентів
   const handlePreviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

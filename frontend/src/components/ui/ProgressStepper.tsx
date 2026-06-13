@@ -69,10 +69,6 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
     const currentIndex = currentStage ? stageOrder.indexOf(currentStage) : 0;
     const stepIndex = stageOrder.indexOf(stepKey);
 
-    if (currentStatus === 'PENDING') {
-      return stepIndex === 0 ? 'active' : 'upcoming';
-    }
-
     if (stepIndex < currentIndex) {
       return 'completed';
     } else if (stepIndex === currentIndex) {
