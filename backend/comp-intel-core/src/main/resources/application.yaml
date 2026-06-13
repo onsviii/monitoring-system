@@ -50,6 +50,7 @@ google:
 serp:
   api:
     key: ${SERP_API_KEY}
+    base-url: https://serpapi.com/search
     reviews:
       max-pages: 2
 

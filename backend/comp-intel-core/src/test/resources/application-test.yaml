@@ -29,6 +29,7 @@ google:
 serp:
   api:
     key: test-key
+    base-url: https://serpapi.com/search
     reviews:
       max-pages: 2
 
