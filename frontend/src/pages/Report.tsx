@@ -219,6 +219,7 @@ export default function Report() {
         impact: rec.priority === 'HIGH' ? 'HIGH' : (rec.priority === 'MEDIUM' ? 'MEDIUM' : 'LOW'),
         aspect: 'service',
         sourcesCount: rec.sourceReviewIds ? rec.sourceReviewIds.length : 0,
+        sourceReviewIds: rec.sourceReviewIds || [],
         references: [],
       }));
     }
@@ -837,8 +838,11 @@ export default function Report() {
                       {rec.sourcesCount} першоджерел
                     </span>
                     <button
-                      onClick={() => setDrilldownFilter({ competitorName: null, aspectName: rec.aspect })}
-                      className="text-[9.5px] text-indigo-700 hover:underline hover:text-indigo-900"
+                        onClick={() => setDrilldownFilter({
+                          competitorName: null,
+                          sourceReviewIds: rec.sourceReviewIds
+                        })}
+                        className="text-[9.5px] text-indigo-700 hover:underline hover:text-indigo-900"
                     >
                       Дивитись першоджерела
                     </button>
