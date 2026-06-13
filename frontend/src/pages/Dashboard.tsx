@@ -43,7 +43,6 @@ export default function Dashboard() {
   const [nicheCode, setNicheCode] = useState<string>('');
   const [niches, setNiches] = useState<NicheDto[]>([]);
 
-  // ОНОВЛЕНО: Використовуємо latitude та longitude
   const [location, setLocation] = useState<{latitude: number; longitude: number} | null>(null);
   const [radiusKm, setRadiusKm] = useState(5);
   const [maxCompetitors, setMaxCompetitors] = useState(10);
@@ -62,7 +61,8 @@ export default function Dashboard() {
 
   // Polling States
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [currentStage, setCurrentStage] = useState<string>('IDLE');
+  const [currentStatus, setCurrentStatus] = useState<string>('PENDING');
+  const [currentStage, setCurrentStage] = useState<string | null>(null);
   const [isFailed, setIsFailed] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -163,19 +163,20 @@ export default function Dashboard() {
     pollIntervalRef.current = setInterval(async () => {
       try {
         const statusData = await getAnalysisStatus(sessionId);
+        setCurrentStatus(statusData.status);
         setCurrentStage(statusData.stage);
 
         if (statusData.status === 'COMPLETED') {
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-          navigate('/report'); // Тільки тепер йдемо на сторінку звіту
+          navigate('/report');
         } else if (statusData.status === 'FAILED') {
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-          setIsFailed(true); // Показуємо помилку
+          setIsFailed(true);
         }
       } catch (err) {
         console.error("Помилка опитування статусу:", err);
       }
-    }, 3000); // Опитуємо кожні 3 секунди
+    }, 3000);
   };
 
   // Крок 1: Запит на прев'ю конкурентів
@@ -264,7 +265,12 @@ export default function Dashboard() {
       // Зберігаємо ID нового аналізу
       localStorage.setItem('last_analysis_id', response.id);
       setCurrentSessionId(response.id);
-      setCurrentStage(response.stage || 'PENDING');
+
+      setCurrentStatus(response.status || 'PENDING');
+      setCurrentStage(response.stage || null);
+
+      setStep('polling');
+      startPolling(response.id);
 
       // Переходимо до екрану завантаження і запускаємо поллінг
       setStep('polling');
@@ -286,9 +292,10 @@ export default function Dashboard() {
     try {
       const response = await retryAnalysis(currentSessionId);
       setIsFailed(false);
-      setCurrentStage(response.stage || 'PENDING');
 
-      // Відновлюємо поллінг
+      setCurrentStatus(response.status || 'PENDING');
+      setCurrentStage(response.stage || null);
+
       startPolling(currentSessionId);
     } catch (err: any) {
       setErrorMsg(err.message || 'Не вдалося відновити сесію. Будь ласка, створіть новий аналіз.');
@@ -539,7 +546,8 @@ export default function Dashboard() {
                 {/* Звичайний ProgressStepper працює, поки статус не FAILED */}
                 {!isFailed && (
                     <ProgressStepper
-                        currentStage={currentStage as any}
+                        currentStatus={currentStatus}
+                        currentStage={currentStage}
                         competitorsCount={0}
                         maxCompetitors={selectedPlaceIds.length}
                     />
