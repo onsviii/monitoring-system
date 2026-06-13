@@ -7,7 +7,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
 
   jackson:
     default-property-inclusion: non_null
@@ -28,6 +28,10 @@ google:
     text-search-url: https://places.googleapis.com/v1/places:searchText
     details-url: https://places.googleapis.com/v1/places/%s
 
+serp:
+  api:
+    key: ${SERP_API_KEY}
+
 ml-service:
   base-url: http://localhost:8001
 
@@ -35,6 +39,6 @@ logging:
   level:
     root: INFO
     ua.bkr.monitor: DEBUG
-    org.hibernate.SQL: DEBUG
+    org.hibernate.SQL: INFO
 server:
   port: 8081
