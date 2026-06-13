@@ -5,7 +5,6 @@
 
 import React from 'react';
 import { Competitor } from '../../types';
-import { HelpCircle, ArrowRight } from 'lucide-react';
 
 interface GapHeatmapTableProps {
   id?: string;
@@ -20,9 +19,9 @@ export const GapHeatmapTable: React.FC<GapHeatmapTableProps> = ({
   onCellSelect,
   sizeMode = 'compact',
 }) => {
-  const aspectsList = [
+  const aspectsList: Array<{ key: keyof Competitor['aspects']; label: string }> = [
     { key: 'service', label: 'Сервіс' },
-    { key: 'product_quality', label: 'Якість продукту', alternatives: ['quality'] },
+    { key: 'product_quality', label: 'Якість продукту' },
     { key: 'price', label: 'Ціна' },
     { key: 'location', label: 'Локація' },
   ];
@@ -115,14 +114,7 @@ export const GapHeatmapTable: React.FC<GapHeatmapTableProps> = ({
                     </div>
                   </td>
                   {aspectsList.map((asp) => {
-                    let score = (comp.aspects as any)[asp.key];
-                    if (score === undefined && asp.alternatives) {
-                      const altKey = asp.alternatives.find(k => (comp.aspects as any)[k] !== undefined);
-                      if (altKey) {
-                        score = (comp.aspects as any)[altKey];
-                      }
-                    }
-
+                    const score = comp.aspects[asp.key];
                     const isNull = score === null || score === undefined;
                     const tooltipText = isNull
                       ? `Клієнти не згадують аспект «${asp.label}» у відгуках про ${comp.name} / Даних недостатньо`
