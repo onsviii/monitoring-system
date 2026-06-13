@@ -1,6 +1,5 @@
 package ua.bkr.monitor.provider;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +34,9 @@ public class GooglePlacesClient {
 
     @Value("${google.places.details-url}")
     private String PLACE_DETAILS_URL;
+
+    @Value("${serp.api.base-url}")
+    private String serpBaseUrl;
 
     @Value("${serp.api.key}")
     private String serpApiKey;
@@ -201,22 +203,18 @@ public class GooglePlacesClient {
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
                 return serpRestClient.get()
-                        .uri(uriBuilder -> {
-                            var b = uriBuilder
-                                    .scheme("https")
-                                    .host("serpapi.com")
-                                    .path("/search")
-                                    .queryParam("engine", "google_maps_reviews")
-                                    .queryParam("place_id", placeId)
-                                    .queryParam("hl", "uk")
-                                    .queryParam("api_key", serpApiKey);
+                        .uri(serpBaseUrl, uriBuilder -> {
+                            uriBuilder.queryParam("engine", "google_maps_reviews")
+                                .queryParam("place_id", placeId)
+                                .queryParam("hl", "uk")
+                                .queryParam("api_key", serpApiKey);
 
                             if (nextPageToken != null) {
-                                b.queryParam("next_page_token", nextPageToken);
-                                b.queryParam("num", 20);
+                                uriBuilder.queryParam("next_page_token", nextPageToken);
+                                uriBuilder.queryParam("num", 20);
                             }
 
-                            return b.build();
+                            return uriBuilder.build();
                         })
                         .retrieve()
                         .body(JsonNode.class);
