@@ -31,6 +31,8 @@ google:
 serp:
   api:
     key: ${SERP_API_KEY}
+    reviews:
+      max-pages: 2
 
 ml-service:
   base-url: http://localhost:8001

@@ -50,6 +50,8 @@ google:
 serp:
   api:
     key: ${SERP_API_KEY}
+    reviews:
+      max-pages: 2
 
 
 ml-service:
