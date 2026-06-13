@@ -197,7 +197,6 @@ public class PipelineOrchestrator {
             Map<UUID, List<GooglePlacesClient.RawReview>> rawReviews) {
 
         updateStage(session, AnalysisStage.ANONYMIZING);
-        reviewRepository.deleteByCompetitorSessionId(session.getId());
 
         List<Review> savedReviews = new ArrayList<>();
 
@@ -223,8 +222,6 @@ public class PipelineOrchestrator {
 
     private void runClassification(AnalysisSession session, List<Review> reviews) {
         updateStage(session, AnalysisStage.CLASSIFYING);
-
-        aspectSentimentRepository.deleteByReviewCompetitorSessionId(session.getId());
 
         List<String> texts = reviews.stream().map(Review::getText).toList();
         List<AspectClassification> results = mlServiceClient.classify(texts);
