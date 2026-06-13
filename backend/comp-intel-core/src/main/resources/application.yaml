@@ -47,6 +47,10 @@ google:
     text-search-url: https://places.googleapis.com/v1/places:searchText
     details-url: https://places.googleapis.com/v1/places/%s
 
+serp:
+  api:
+    key: ${SERP_API_KEY}
+
 
 ml-service:
   base-url: ${ML_SERVICE_URL:http://localhost:8001}
