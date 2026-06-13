@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import ua.bkr.monitor.dto.AggregatedStatistics;
@@ -20,6 +22,7 @@ import ua.bkr.monitor.model.record.GeneratedRecommendation;
 import ua.bkr.monitor.model.record.IndexedReview;
 import ua.bkr.monitor.provider.GooglePlacesClient;
 import ua.bkr.monitor.provider.MlServiceClient;
+import ua.bkr.monitor.provider.dto.AspectClassification;
 import ua.bkr.monitor.repository.*;
 
 import java.time.LocalDateTime;
@@ -56,11 +59,13 @@ public class PipelineOrchestrator {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleAnalysisCreated(AnalysisCreatedEvent event) {
         runAsync(event.sessionId(), event.request());
     }
 
     @Async
+    @Transactional(noRollbackFor = DataCollectionException.class)
     public void runAsync(UUID sessionId, CreateAnalysisRequest request) {
         AnalysisSession session = sessionRepository.findWithUserById(sessionId).orElseThrow();
         session.setStatus(SessionStatus.RUNNING);
@@ -79,6 +84,7 @@ public class PipelineOrchestrator {
     }
 
     @Async
+    @Transactional(noRollbackFor = DataCollectionException.class)
     public void resumeAsync(UUID sessionId) {
         AnalysisSession session = sessionRepository.findWithUserById(sessionId).orElseThrow();
         session.setStatus(SessionStatus.RUNNING);
@@ -217,7 +223,7 @@ public class PipelineOrchestrator {
         aspectSentimentRepository.deleteByReviewCompetitorSessionId(session.getId());
 
         List<String> texts = reviews.stream().map(Review::getText).toList();
-        List<MlServiceClient.AspectClassification> results = mlServiceClient.classify(texts);
+        List<AspectClassification> results = mlServiceClient.classify(texts);
 
         for (int i = 0; i < reviews.size(); i++) {
             saveAspectSentiments(reviews.get(i), results.get(i));
@@ -269,7 +275,7 @@ public class PipelineOrchestrator {
                 });
     }
 
-    private void saveAspectSentiments(Review review, MlServiceClient.AspectClassification result) {
+    private void saveAspectSentiments(Review review, AspectClassification result) {
         result.aspects().forEach((name, aspectResult) -> {
             AspectCategory category = aspectCategoryRepository.findByName(name)
                     .orElseThrow(() -> new ResourceNotFoundException("Aspect not found: " + name));
@@ -361,6 +367,7 @@ public class PipelineOrchestrator {
                 result.put(c.getId(), googlePlacesClient.fetchReviews(c.getExternalApiId(), sessionId));
             } catch (DataCollectionException e) {
                 persistCollectionError(sessionId, e.getErrorType().name(), e.getMessage());
+                throw e;
             }
         }
         return result;
