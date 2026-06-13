@@ -41,7 +41,7 @@ class PlacesServiceTest {
         niche.setGoogleTypes(new LinkedHashSet<>(List.of("cafe", "coffee_shop")));
         Location location = new Location(50.0, 30.0);
         List<PlaceInfo> placeInfos = List.of(
-                new PlaceInfo("id-1", "Cafe", "Addr", "cafe", 4.5, location)
+                new PlaceInfo("id-1", "Cafe", "Addr", "cafe", 4.5, 42, location)
         );
         PlaceSearchResponse expected = new PlaceSearchResponse(List.of());
 
@@ -78,7 +78,7 @@ class PlacesServiceTest {
         niche.setGoogleTypes(new LinkedHashSet<>(List.of("cafe")));
         Location location = new Location(null, null);
         List<PlaceInfo> placeInfos = List.of(
-                new PlaceInfo("id-2", "Latte", "Addr", "cafe", 4.7, location)
+                new PlaceInfo("id-2", "Latte", "Addr", "cafe", 4.7, 15, location)
         );
         PlaceSearchResponse expected = new PlaceSearchResponse(List.of());
 

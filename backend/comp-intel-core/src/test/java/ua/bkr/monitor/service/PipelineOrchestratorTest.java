@@ -7,6 +7,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ua.bkr.monitor.dto.AggregatedStatistics;
+import ua.bkr.monitor.provider.dto.AspectClassification;
 import ua.bkr.monitor.dto.CreateAnalysisRequest;
 import ua.bkr.monitor.exception.DataCollectionException;
 import ua.bkr.monitor.model.*;
@@ -18,9 +19,9 @@ import ua.bkr.monitor.model.record.GeneratedRecommendation;
 import ua.bkr.monitor.model.record.Location;
 import ua.bkr.monitor.provider.GooglePlacesClient;
 import ua.bkr.monitor.provider.MlServiceClient;
+import ua.bkr.monitor.provider.dto.AspectResult;
 import ua.bkr.monitor.repository.*;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -134,11 +135,11 @@ class PipelineOrchestratorTest {
             if (texts.isEmpty()) {
                 return List.of();
             }
-            Map<ua.bkr.monitor.model.enums.Aspect, MlServiceClient.AspectResult> aspects = Map.of(
-                    ua.bkr.monitor.model.enums.Aspect.SERVICE, new MlServiceClient.AspectResult(1, 0.9f),
-                    ua.bkr.monitor.model.enums.Aspect.PRICE, new MlServiceClient.AspectResult(-1, 0.6f)
+            Map<ua.bkr.monitor.model.enums.Aspect, AspectResult> aspects = Map.of(
+                    ua.bkr.monitor.model.enums.Aspect.SERVICE, new AspectResult(1, 0.9f),
+                    ua.bkr.monitor.model.enums.Aspect.PRICE, new AspectResult(-1, 0.6f)
             );
-            return List.of(new MlServiceClient.AspectClassification(aspects));
+            return List.of(new AspectClassification(aspects));
         });
 
         when(aspectCategoryRepository.findByName(any())).thenAnswer(invocation -> {

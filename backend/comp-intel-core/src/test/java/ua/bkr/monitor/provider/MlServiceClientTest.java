@@ -6,7 +6,9 @@ import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
+import ua.bkr.monitor.provider.dto.AspectClassification;
 import ua.bkr.monitor.model.enums.Aspect;
+import ua.bkr.monitor.provider.dto.AspectResult;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -85,10 +87,10 @@ class MlServiceClientTest {
 
         MlServiceClient client = buildClient(baseUrl);
 
-        List<MlServiceClient.AspectClassification> results = client.classify(List.of("text"));
+        List<AspectClassification> results = client.classify(List.of("text"));
 
         assertThat(results).hasSize(1);
-        Map<Aspect, MlServiceClient.AspectResult> aspects = results.get(0).aspects();
+        Map<Aspect, AspectResult> aspects = results.get(0).aspects();
         assertThat(aspects).containsKeys(Aspect.SERVICE, Aspect.PRICE);
         assertThat(aspects.get(Aspect.SERVICE).polarity()).isEqualTo(1);
         assertThat(aspects.get(Aspect.PRICE).polarity()).isEqualTo(-1);
