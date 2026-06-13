@@ -25,7 +25,7 @@ export interface PlaceCandidateDto {
   name: string;
   address: string;
   rating: number;
-  userRatingsTotal: number;
+  userRatingCount: number | null;
   location: Location;
 }
 

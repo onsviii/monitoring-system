@@ -279,10 +279,12 @@ export default function ProfileSetup() {
                           <span className="text-[10px] text-gray-500 block leading-tight">
                             {p.address}
                           </span>
-                          <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600">
-                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                            {p.rating} ({p.userRatingsTotal} відгуків)
-                          </span>
+                          {p.rating != null && (
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600">
+                              <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                              {p.rating}{p.userRatingCount != null && ` (${p.userRatingCount} відгуків)`}
+                            </span>
+                          )}
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
                           isSelected 
