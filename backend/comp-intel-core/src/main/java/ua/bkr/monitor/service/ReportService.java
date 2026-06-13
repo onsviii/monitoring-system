@@ -110,6 +110,7 @@ public class ReportService {
                     Review review = s.getReview();
                     return new ReviewSourceDto(
                             review.getId(),
+                            review.getCompetitor().getName(),
                             review.getText(),
                             review.getRating(),
                             review.getCreatedAt(),
@@ -126,11 +127,12 @@ public class ReportService {
     public SourcesResponse getSourcesByReviewIds(String userId, UUID sessionId, List<UUID> reviewIds) {
         getSessionForUser(userId, sessionId);
 
-        List<Review> reviews = reviewRepository.findAllById(reviewIds);
+        List<Review> reviews = reviewRepository.findAllWithCompetitorByIdIn(reviewIds);
 
         List<ReviewSourceDto> sources = reviews.stream()
                 .map(review -> new ReviewSourceDto(
                         review.getId(),
+                        review.getCompetitor().getName(),
                         review.getText(),
                         review.getRating(),
                         review.getCreatedAt(),

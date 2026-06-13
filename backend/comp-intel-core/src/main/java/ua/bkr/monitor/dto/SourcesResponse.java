@@ -10,6 +10,7 @@ public record SourcesResponse(
 
     public record ReviewSourceDto(
             UUID id,
+            String competitorName,
             String text,
             Integer rating,
             LocalDateTime createdAt,
