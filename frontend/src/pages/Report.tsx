@@ -774,7 +774,7 @@ export default function Report() {
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-sm text-gray-800">Унікальні характеристики конкурентів</h3>
-                <Badge variant="ai">ШШІ-аналіз</Badge>
+                {analysisReport?.aiMarked && <Badge variant="ai">ШШІ-аналіз</Badge>}
               </div>
               <span className="text-xs text-gray-400 italic">Аспекти, відзначені клієнтами</span>
             </div>
@@ -828,7 +828,7 @@ export default function Report() {
                 </span>
                 <span className="font-bold text-sm text-gray-900">Стратегічні рекомендації</span>
               </div>
-              <Badge variant="ai">ШШІ-Генерація</Badge>
+              {analysisReport?.aiMarked && <Badge variant="ai">ШШІ-аналіз</Badge>}
             </div>
 
             <p className="text-xs text-gray-500 leading-relaxed">
@@ -868,10 +868,11 @@ export default function Report() {
               ))}
             </div>
 
-            {/* AI Compliance Disclaimer strictly requested */}
-            <div id="ai-act-disclaimer" className="text-[10px] text-gray-400 bg-gray-50 p-3 rounded-lg border-l-2 border-gray-300 leading-relaxed mt-4">
-              Рекомендації згенеровані штучним інтелектом на основі агрегованих даних і мають дорадчий характер. Відповідальність за управлінські рішення повністю залишається за користувачем.
-            </div>
+            {analysisReport?.aiMarked && analysisReport?.disclaimer && (
+                <div id="ai-act-disclaimer" className="text-[10px] text-gray-400 bg-gray-50 p-3 rounded-lg border-l-2 border-gray-300 leading-relaxed mt-4">
+                  {analysisReport.disclaimer}
+                </div>
+            )}
           </div>
 
           {/* Strategy AI assistant block */}
