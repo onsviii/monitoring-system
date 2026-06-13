@@ -16,7 +16,7 @@ export const mockCompetitors: Competitor[] = [
     coordinates: { x: 45, y: 35 },
     aspects: {
       service: 1,  // Positive
-      quality: 1,  // Positive
+      product_quality: 1,  // Positive
       price: -1,   // Negative (expensive)
       location: 1, // Positive
     },
@@ -36,7 +36,7 @@ export const mockCompetitors: Competitor[] = [
     coordinates: { x: 55, y: 50 },
     aspects: {
       service: 1,
-      quality: 0,  // Neutral
+      product_quality: 0,  // Neutral
       price: -1,
       location: null, // Not mentioned
     },
@@ -56,7 +56,7 @@ export const mockCompetitors: Competitor[] = [
     coordinates: { x: 30, y: 65 },
     aspects: {
       service: 1,
-      quality: 1,
+      product_quality: 1,
       price: null,   // Not mentioned
       location: -1, // Negative (hard to find/small)
     },
@@ -76,7 +76,7 @@ export const mockCompetitors: Competitor[] = [
     coordinates: { x: 70, y: 25 },
     aspects: {
       service: -1,
-      quality: -1,
+      product_quality: -1,
       price: 1,
       location: 0,
     },
@@ -205,9 +205,9 @@ export const mockSentimentTrend = [
 
 // Positioning coordinates for Scatter Matrix
 export const mockPositioningData = [
-  { name: 'Копальня кави (Ви)', quality: 85, price: 60, r: 25 },
-  { name: 'Світ Кави', quality: 90, price: 90, r: 18 },
-  { name: 'Кафе Кентавр', quality: 70, price: 80, r: 20 },
-  { name: 'Альтернативна Кава', quality: 80, price: 40, r: 15 },
-  { name: 'Цісар', quality: 40, price: 20, r: 22 },
+  { name: 'Копальня кави (Ви)', product_quality: 85, price: 60, r: 25 },
+  { name: 'Світ Кави', product_quality: 90, price: 90, r: 18 },
+  { name: 'Кафе Кентавр', product_quality: 70, price: 80, r: 20 },
+  { name: 'Альтернативна Кава', product_quality: 80, price: 40, r: 15 },
+  { name: 'Цісар', product_quality: 40, price: 20, r: 22 },
 ];
