@@ -50,7 +50,7 @@ export const StrategyAIChat: React.FC<StrategyAIChatProps> = ({
             // Стартове повідомлення, якщо історія порожня
             setMessages([{
               id: 'msg_welcome',
-              sender: 'ai',
+              role: 'ASSISTANT',
               text: 'Привіт! Чим можу допомогти з інтерпретацією результатів аналітичного звіту вашого закладу?',
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             }]);
@@ -59,7 +59,7 @@ export const StrategyAIChat: React.FC<StrategyAIChatProps> = ({
           console.error('Помилка завантаження історії чату:', error);
           setMessages([{
             id: 'msg_error_init',
-            sender: 'ai',
+            role: 'ASSISTANT',
             text: 'Не вдалося завантажити історію чату. Але ви можете поставити своє запитання.',
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           }]);
@@ -83,7 +83,7 @@ export const StrategyAIChat: React.FC<StrategyAIChatProps> = ({
 
     const userMsg: ChatMessage = {
       id: `msg_user_${Date.now()}`,
-      sender: 'USER',
+      role: 'USER',
       text,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
@@ -101,7 +101,7 @@ export const StrategyAIChat: React.FC<StrategyAIChatProps> = ({
 
       const errorMsg: ChatMessage = {
         id: `msg_error_${Date.now()}`,
-        sender: 'ASSISTANT',
+        role: 'ASSISTANT',
         text: 'На жаль, втрачено зв\'язок із сервером. Спробуйте пізніше.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
@@ -166,12 +166,12 @@ export const StrategyAIChat: React.FC<StrategyAIChatProps> = ({
                     <div
                         key={msg.id}
                         className={`flex flex-col max-w-[88%] ${
-                            msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
+                            msg.role === 'USER' ? 'ml-auto items-end' : 'mr-auto items-start'
                         }`}
                     >
                       <div
                           className={`px-3.5 py-2.5 rounded-2xl text-[12px] leading-relaxed shadow-sm border ${
-                              msg.sender === 'user'
+                              msg.role === 'USER'
                                   ? 'bg-indigo-600 text-white rounded-br-none border-indigo-600 shadow-indigo-100'
                                   : 'bg-white text-gray-800 rounded-bl-none border-gray-100'
                           }`}
