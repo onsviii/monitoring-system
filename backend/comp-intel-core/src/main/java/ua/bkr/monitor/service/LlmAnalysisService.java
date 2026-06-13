@@ -125,7 +125,7 @@ public class LlmAnalysisService {
         messages.add(Map.of("role", "system", "content", system));
 
         for (ChatTurn turn : history) {
-            messages.add(Map.of("role", turn.role(), "content", turn.text()));
+            messages.add(Map.of("role", turn.role().toLowerCase(), "content", turn.text()));
         }
 
         messages.add(Map.of("role", "user", "content", userMessage));
