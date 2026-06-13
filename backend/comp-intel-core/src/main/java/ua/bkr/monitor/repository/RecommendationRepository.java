@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface RecommendationRepository extends JpaRepository<Recommendation, UUID> {
     List<Recommendation> findByReportId(UUID reportId);
+    void deleteByReportSessionId(UUID sessionId);
 }

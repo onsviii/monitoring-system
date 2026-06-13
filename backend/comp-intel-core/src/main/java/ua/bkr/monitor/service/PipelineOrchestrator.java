@@ -91,6 +91,9 @@ public class PipelineOrchestrator {
         session.setStatus(SessionStatus.RUNNING);
         sessionRepository.save(session);
 
+        AnalysisStage stage = session.getStage();
+        cleanFromStage(sessionId, stage);
+
         try {
             switch (session.getStage()) {
                 case COLLECTING_DATA -> runFromCollecting(session);
@@ -238,7 +241,6 @@ public class PipelineOrchestrator {
             AnalysisSession session, List<Competitor> competitors, List<Review> reviews) {
 
         updateStage(session, AnalysisStage.EXTRACTING_CHARACTERISTICS);
-        freeCharacteristicRepository.deleteByCompetitorSessionId(session.getId());
 
         List<ExtractedCharacteristic> allCharacteristics = new ArrayList<>();
 
@@ -318,7 +320,6 @@ public class PipelineOrchestrator {
             AnalysisSession session, List<ExtractedCharacteristic> characteristics) {
 
         updateStage(session, AnalysisStage.GENERATING_REPORT);
-        reportRepository.deleteBySessionId(session.getId());
 
         UUID sessionId = session.getId();
 
@@ -426,5 +427,48 @@ public class PipelineOrchestrator {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    private void cleanFromStage(UUID sessionId, AnalysisStage stage) {
+        switch (stage) {
+            case ANONYMIZING -> {
+                cleanReport(sessionId);
+                cleanCharacteristics(sessionId);
+                cleanClassification(sessionId);
+                cleanReviews(sessionId);
+            }
+            case CLASSIFYING -> {
+                cleanReport(sessionId);
+                cleanCharacteristics(sessionId);
+                cleanClassification(sessionId);
+            }
+            case EXTRACTING_CHARACTERISTICS -> {
+                cleanReport(sessionId);
+                cleanCharacteristics(sessionId);
+            }
+            case GENERATING_REPORT -> {
+                cleanReport(sessionId);
+            }
+            default -> {}
+        }
+    }
+
+    private void cleanReport(UUID sessionId) {
+        recommendationSourceRepository.deleteByRecommendationReportSessionId(sessionId);
+        recommendationRepository.deleteByReportSessionId(sessionId);
+        reportRepository.deleteBySessionId(sessionId);
+    }
+
+    private void cleanCharacteristics(UUID sessionId) {
+        characteristicSourceRepository.deleteByCharacteristicCompetitorSessionId(sessionId);
+        freeCharacteristicRepository.deleteByCompetitorSessionId(sessionId);
+    }
+
+    private void cleanClassification(UUID sessionId) {
+        aspectSentimentRepository.deleteByReviewCompetitorSessionId(sessionId);
+    }
+
+    private void cleanReviews(UUID sessionId) {
+        reviewRepository.deleteByCompetitorSessionId(sessionId);
     }
 }

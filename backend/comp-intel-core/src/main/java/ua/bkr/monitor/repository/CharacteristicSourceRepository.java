@@ -8,6 +8,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface CharacteristicSourceRepository extends JpaRepository<CharacteristicSource, CharacteristicSourceId> {
-    List<CharacteristicSource> findByCharacteristicId(UUID characteristicId);
     List<CharacteristicSource> findByCharacteristicIdIn(List<UUID> characteristicIds);
+    void deleteByCharacteristicCompetitorSessionId(UUID sessionId);
 }
