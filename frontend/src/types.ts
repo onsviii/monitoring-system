@@ -12,10 +12,10 @@ export interface Competitor {
   rating: number;
   coordinates: { x: number; y: number }; // Relative percentage for map
   aspects: {
-    SERVICE: number | null;
-    PRODUCT_QUALITY: number | null;
-    PRICE: number | null;
-    LOCATION: number | null;
+    service: number | null;
+    product_quality: number | null;
+    price: number | null;
+    location: number | null;
   };
   uniqueTags: {
     text: string;
@@ -37,7 +37,7 @@ export interface Recommendation {
 
 export interface ChatMessage {
   id: string;
-  sender: 'USER' | 'ASSISTANT';
+  role: 'USER' | 'ASSISTANT';
   text: string;
   timestamp: string;
 }
