@@ -25,10 +25,10 @@ interface RadarChartWidgetProps {
     competitorName: string;
     isOwn?: boolean;
     aspects: {
-      service: number;          // -1.0 ... +1.0
-      product_quality: number;  // -1.0 ... +1.0
-      price: number;            // -1.0 ... +1.0
-      location: number;         // -1.0 ... +1.0
+      SERVICE?: number;
+      PRODUCT_QUALITY?: number;
+      PRICE?: number;
+      LOCATION?: number;
     };
   }>;
 }
@@ -131,13 +131,13 @@ export const RadarChartWidget: React.FC<RadarChartWidgetProps> = ({ id, business
   };
 
   const aspectLabels: Record<string, string> = {
-    service: 'Сервіс',
-    product_quality: 'Якість продукту',
-    price: 'Ціна',
-    location: 'Локація',
+    SERVICE: 'Сервіс',
+    PRODUCT_QUALITY: 'Якість продукту',
+    PRICE: 'Ціна',
+    LOCATION: 'Локація',
   };
 
-  const aspectsKeys = ['service', 'product_quality', 'price', 'location'];
+  const aspectsKeys = ['SERVICE', 'PRODUCT_QUALITY', 'PRICE', 'LOCATION'];
 
   // Map aspects objects onto axes rows for Recharts
   const chartData = aspectsKeys.map(key => {
