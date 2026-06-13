@@ -117,7 +117,7 @@ public class PipelineOrchestrator {
                 .toList();
 
         competitorRepository.saveAll(competitors);
-        markOwnBusiness(session, competitors);
+        competitors = ensureOwnBusinessIncluded(session, competitors);
 
         Map<UUID, List<GooglePlacesClient.RawReview>> rawReviews =
                 fetchAllReviews(competitors, session.getId());
@@ -135,6 +135,8 @@ public class PipelineOrchestrator {
                     CollectionErrorType.SEARCH_FAILED, null,
                     "No competitors found, please create a new analysis");
         }
+
+        competitors = ensureOwnBusinessIncluded(session, competitors);
 
         Map<UUID, List<GooglePlacesClient.RawReview>> rawReviews =
                 fetchAllReviews(competitors, session.getId());
@@ -292,17 +294,37 @@ public class PipelineOrchestrator {
         runReportGeneration(session, allCharacteristics);
     }
 
-    private void markOwnBusiness(AnalysisSession session, List<Competitor> competitors) {
-        String userPlaceId = session.getUser().getGooglePlaceId();
-        if (userPlaceId == null) return;
+    private List<Competitor> ensureOwnBusinessIncluded(
+            AnalysisSession session, List<Competitor> competitors) {
 
-        competitors.stream()
+        String userPlaceId = session.getUser().getGooglePlaceId();
+        if (userPlaceId == null) return competitors;
+
+        Optional<Competitor> existing = competitors.stream()
                 .filter(c -> userPlaceId.equals(c.getExternalApiId()))
-                .findFirst()
-                .ifPresent(c -> {
-                    c.setOwnBusiness(true);
-                    competitorRepository.save(c);
-                });
+                .findFirst();
+
+        if (existing.isPresent()) {
+            existing.get().setOwnBusiness(true);
+            competitorRepository.save(existing.get());
+            return competitors;
+        }
+
+        GooglePlacesClient.PlaceInfo info = googlePlacesClient.getPlaceInfo(userPlaceId);
+
+        Competitor own = new Competitor();
+        own.setSession(session);
+        own.setNiche(session.getBusinessNiche());
+        own.setExternalApiId(info.placeId());
+        own.setName(info.name());
+        own.setAddress(info.address());
+        own.setRating(info.rating());
+        own.setOwnBusiness(true);
+        competitorRepository.save(own);
+
+        List<Competitor> result = new ArrayList<>(competitors);
+        result.add(own);
+        return result;
     }
 
     private void saveAspectSentiments(Review review, AspectClassification result) {
