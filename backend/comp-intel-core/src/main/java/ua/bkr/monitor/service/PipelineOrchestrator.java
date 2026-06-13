@@ -254,8 +254,11 @@ public class PipelineOrchestrator {
                             competitor.getName(), indexed, session.getId());
 
             allCharacteristics.addAll(characteristics);
-
             saveCharacteristics(competitor, compReviews, characteristics);
+
+            if (competitors.indexOf(competitor) < competitors.size() - 1) {
+                sleep(3000);
+            }
         }
 
         runReportGeneration(session, allCharacteristics);
@@ -411,6 +414,14 @@ public class PipelineOrchestrator {
             });
         } catch (Exception e) {
             log.warn("Failed to persist collection error log: {}", e.getMessage());
+        }
+    }
+
+    private void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }
