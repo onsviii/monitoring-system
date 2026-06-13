@@ -57,7 +57,7 @@ class ProfileServiceTest {
         Niche niche = new Niche();
         niche.setCode("COFFEE");
         UserProfile profile = new UserProfile();
-        ProfileResponse response = new ProfileResponse("Biz", "COFFEE", "place-1", "Address", request.location());
+        ProfileResponse response = new ProfileResponse("Biz", "COFFEE", "Кав'ярня","place-1", "Address", request.location());
 
         when(nicheRepository.findByCode("COFFEE")).thenReturn(Optional.of(niche));
         when(userProfileMapper.toEntity(request, USER_ID, niche)).thenReturn(profile);
@@ -82,7 +82,7 @@ class ProfileServiceTest {
     @Test
     void get_returnsMappedResponse() {
         UserProfile profile = new UserProfile();
-        ProfileResponse response = new ProfileResponse("Biz", "COFFEE", "place-1", "Address", new Location(1.0, 2.0));
+        ProfileResponse response = new ProfileResponse("Biz", "COFFEE", "Кав'ярня","place-1", "Address", new Location(1.0, 2.0));
         when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile));
         when(userProfileMapper.toResponse(profile)).thenReturn(response);
 

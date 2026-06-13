@@ -20,5 +20,6 @@ public interface UserProfileMapper {
     UserProfile toEntity(CreateProfileRequest request, String userId, Niche niche);
 
     @Mapping(target = "nicheCode", source = "userProfile.niche.code")
+    @Mapping(target = "nicheName", source = "userProfile.niche.displayName")
     ProfileResponse toResponse(UserProfile userProfile);
 }

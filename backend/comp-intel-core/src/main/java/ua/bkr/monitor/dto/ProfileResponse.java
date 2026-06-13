@@ -5,6 +5,7 @@ import ua.bkr.monitor.model.record.Location;
 public record ProfileResponse(
         String businessName,
         String nicheCode,
+        String nicheName,
         String googlePlaceId,
         String address,
         Location location
