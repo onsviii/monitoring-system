@@ -759,7 +759,7 @@ export default function Report() {
           </div>
 
           {/* Strategy AI assistant block */}
-          <StrategyAIChat id="chatbot-widget" />
+          <StrategyAIChat id="chatbot-widget" sessionId={analysisReport?.sessionId} />
 
         </div>
 

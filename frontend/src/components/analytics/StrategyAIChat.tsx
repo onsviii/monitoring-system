@@ -11,6 +11,7 @@ import { sendChatMessage, getChatHistory } from '../../api/analysisService';
 
 interface StrategyAIChatProps {
   id?: string;
+  sessionId?: string;
   initialPresets?: string[];
 }
 
@@ -22,6 +23,7 @@ const DEFAULT_PRESETS = [
 
 export const StrategyAIChat: React.FC<StrategyAIChatProps> = ({
                                                                 id,
+                                                                sessionId,
                                                                 initialPresets = DEFAULT_PRESETS
                                                               }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -39,11 +41,11 @@ export const StrategyAIChat: React.FC<StrategyAIChatProps> = ({
   }, [messages, isTyping]);
 
   useEffect(() => {
-    if (isOpen && id && !isHistoryLoaded) {
+    if (isOpen && sessionId && !isHistoryLoaded) {
       const loadHistory = async () => {
         setIsTyping(true);
         try {
-          const history = await getChatHistory(id);
+          const history = await getChatHistory(sessionId);
           if (history && history.length > 0) {
             setMessages(history);
           } else {
@@ -71,7 +73,7 @@ export const StrategyAIChat: React.FC<StrategyAIChatProps> = ({
 
       loadHistory();
     }
-  }, [isOpen, id, isHistoryLoaded]);
+  }, [isOpen, sessionId, isHistoryLoaded]);
 
   const handleOpen = () => {
     setIsOpen(true);
@@ -79,7 +81,7 @@ export const StrategyAIChat: React.FC<StrategyAIChatProps> = ({
   };
 
   const handleSend = async (text: string) => {
-    if (!text.trim() || isTyping || !id) return;
+    if (!text.trim() || isTyping || !sessionId) return;
 
     const userMsg: ChatMessage = {
       id: `msg_user_${Date.now()}`,
@@ -93,7 +95,7 @@ export const StrategyAIChat: React.FC<StrategyAIChatProps> = ({
     setIsTyping(true);
 
     try {
-      const aiResponse = await sendChatMessage(id, text);
+      const aiResponse = await sendChatMessage(sessionId, text);
 
       setMessages((prev) => [...prev, aiResponse]);
     } catch (error) {
@@ -197,7 +199,7 @@ export const StrategyAIChat: React.FC<StrategyAIChatProps> = ({
               </div>
 
               {/* Preset Questions Suggestions Drawer */}
-              {messages.length <= 1 && id && (
+              {messages.length <= 1 && sessionId && (
                   <div className="px-3 py-1.5 border-t border-gray-100 bg-white overflow-x-auto whitespace-nowrap flex gap-1.5 scrollbar-none select-none">
                     {initialPresets.map((q, idx) => (
                         <button
@@ -224,13 +226,13 @@ export const StrategyAIChat: React.FC<StrategyAIChatProps> = ({
                     type="text"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
-                    placeholder={id ? "Запитайте про конкурентів або стратегію..." : "Завантаження аналізу..."}
-                    disabled={!id || isTyping}
+                    placeholder={sessionId ? "Запитайте про конкурентів або стратегію..." : "Завантаження аналізу..."}
+                    disabled={!sessionId || isTyping}
                     className="flex-1 bg-gray-50 border border-gray-200 text-[12px] px-3.5 py-2.5 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-gray-800 transition-colors placeholder:text-gray-400 disabled:opacity-60"
                 />
                 <button
                     type="submit"
-                    disabled={!inputValue.trim() || isTyping || !id}
+                    disabled={!inputValue.trim() || isTyping || !sessionId}
                     className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-300 disabled:cursor-not-allowed text-white rounded-xl p-2.5 flex items-center justify-center transition-colors shadow-sm h-full cursor-pointer shrink-0"
                 >
                   <Send className="w-4 h-4" />
