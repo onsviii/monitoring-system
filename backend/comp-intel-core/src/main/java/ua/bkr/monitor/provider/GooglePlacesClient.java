@@ -6,12 +6,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import ua.bkr.monitor.exception.DataCollectionException;
 import ua.bkr.monitor.model.enums.CollectionErrorType;
 import ua.bkr.monitor.model.record.Location;
 import ua.bkr.monitor.provider.dto.GooglePlaceDto;
 import ua.bkr.monitor.provider.dto.GooglePlacesSearchResponse;
-import ua.bkr.monitor.provider.dto.SerpApiPlaceResultsResponse;
+import ua.bkr.monitor.provider.dto.SerpApiReviewDto;
 import ua.bkr.monitor.provider.mapper.GooglePlacesMapper;
 
 import java.util.HashMap;
@@ -39,6 +42,7 @@ public class GooglePlacesClient {
     private String serpApiKey;
 
     private RestClient serpRestClient;
+    private final ObjectMapper objectMapper;
 
     private static final int MAX_RETRIES = 3;
 
@@ -58,7 +62,7 @@ public class GooglePlacesClient {
                     .uri(url)
                     .header("X-Goog-Api-Key", apiKey)
                     .header("X-Goog-FieldMask",
-                            "id,displayName,formattedAddress,rating,location,primaryType")
+                            "id,displayName,formattedAddress,rating,userRatingCount,location,primaryType")
                     .retrieve()
                     .body(GooglePlaceDto.class);
 
@@ -103,7 +107,7 @@ public class GooglePlacesClient {
         try {
             GooglePlacesSearchResponse response = restClient.post()
                     .uri(TEXT_SEARCH_URL)
-                    .header("X-Goog-FieldMask", "places.id,places.displayName,places.formattedAddress,places.rating,places.location,places.primaryType")
+                    .header("X-Goog-FieldMask", "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.primaryType")
                     .body(body)
                     .retrieve()
                     .body(GooglePlacesSearchResponse.class);
@@ -164,28 +168,28 @@ public class GooglePlacesClient {
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
-                SerpApiPlaceResultsResponse response = serpRestClient.get()
+                JsonNode responseNode = serpRestClient.get()
                         .uri(uriBuilder -> uriBuilder
                                 .scheme("https")
                                 .host("serpapi.com")
                                 .path("/search")
-                                .queryParam("engine", "google_maps")
-                                .queryParam("type", "place")
+                                .queryParam("engine", "google_maps_reviews")
                                 .queryParam("place_id", placeId)
                                 .queryParam("hl", "uk")
                                 .queryParam("api_key", serpApiKey)
                                 .build())
                         .retrieve()
-                        .body(SerpApiPlaceResultsResponse.class);
+                        .body(JsonNode.class);
 
-                if (response == null || response.placeResults() == null
-                        || response.placeResults().userReviews() == null) {
+                if (responseNode == null || !responseNode.hasNonNull("reviews")) {
                     return List.of();
                 }
 
-                return mapper.toRawReviewsFromSerpApi(
-                        response.placeResults().userReviews().mostRelevant());
+                List<SerpApiReviewDto> serpReviews = objectMapper.treeToValue(
+                        responseNode.get("reviews"), new TypeReference<List<SerpApiReviewDto>>() {}
+                );
 
+                return mapper.toRawReviewsFromSerpApi(serpReviews);
             } catch (Exception e) {
                 lastException = e;
                 log.warn("Attempt {}/{} failed for place {}: {}", attempt, MAX_RETRIES, placeId, e.getMessage());
@@ -206,7 +210,7 @@ public class GooglePlacesClient {
     private List<PlaceInfo> executeSearchRequest(Map<String, Object> body) {
         GooglePlacesSearchResponse response = restClient.post()
                 .uri(TEXT_SEARCH_URL)
-                .header("X-Goog-FieldMask", "places.id,places.displayName,places.formattedAddress,places.rating,places.location,places.primaryType")
+                .header("X-Goog-FieldMask", "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.primaryType")
                 .body(body)
                 .retrieve()
                 .body(GooglePlacesSearchResponse.class);
@@ -242,6 +246,7 @@ public class GooglePlacesClient {
             String address,
             String category,
             Double rating,
+            Integer userRatingCount,
             Location location) {}
 
     public record RawReview(

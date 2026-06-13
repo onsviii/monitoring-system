@@ -10,6 +10,7 @@ public record GooglePlaceDto(
         String formattedAddress,
         String primaryType,
         Double rating,
+        Integer userRatingCount,
         Location location
 ) {
     @JsonIgnoreProperties(ignoreUnknown = true)
