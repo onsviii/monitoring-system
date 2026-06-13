@@ -24,7 +24,7 @@ import PositioningMatrix from '../components/analytics/PositioningMatrix';
 import SentimentTrendChart from '../components/analytics/SentimentTrendChart';
 import ReportMap from '../components/ui/ReportMap';
 import StrategyAIChat from '../components/analytics/StrategyAIChat';
-import { getAnalysisReport, getAnalysisStatus, CompetitorReportResponse, updateReportName, getAnalysisSources } from '../api/analysisService';
+import { getAnalysisReport, getAnalysisStatus, CompetitorReportResponse, updateReportName, getAnalysisSources, type ReviewAspects } from '../api/analysisService';
 import { auth, db } from '../config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { getProfile } from '../api/profileService';
@@ -238,6 +238,13 @@ export default function Report() {
   const [sourceReviews, setSourceReviews] = useState<any[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
 
+  const aspectLabelToKey: Record<string, keyof ReviewAspects> = {
+    'Сервіс': 'SERVICE',
+    'Якість продукту': 'PRODUCT_QUALITY',
+    'Ціна': 'PRICE',
+    'Локація': 'LOCATION',
+  };
+
   useEffect(() => {
     async function fetchReviews() {
       if (!drilldownFilter.competitorName || !drilldownFilter.aspectName || !analysisReport?.sessionId) {
@@ -248,12 +255,14 @@ export default function Report() {
       const comp = competitors.find(c => c.name === drilldownFilter.competitorName);
       if (!comp) return;
 
+      const aspectKey = aspectLabelToKey[drilldownFilter.aspectName] ?? drilldownFilter.aspectName.toUpperCase();
+
       setIsLoadingReviews(true);
       try {
         const response = await getAnalysisSources(
             analysisReport.sessionId,
             comp.id,
-            drilldownFilter.aspectName.toUpperCase()
+            aspectKey
         );
 
         const mappedReviews = (response.reviews || []).map((rev: any) => ({
