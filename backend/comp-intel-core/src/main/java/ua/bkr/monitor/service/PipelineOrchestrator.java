@@ -53,7 +53,6 @@ public class PipelineOrchestrator {
     private final AnalyticalReportRepository reportRepository;
     private final AspectCategoryRepository aspectCategoryRepository;
     private final CharacteristicSourceRepository characteristicSourceRepository;
-    private final CollectionErrorLogRepository collectionErrorLogRepository;
     private final RecommendationRepository recommendationRepository;
     private final RecommendationSourceRepository recommendationSourceRepository;
 
@@ -408,7 +407,7 @@ public class PipelineOrchestrator {
                 log.setErrorType(errorType);
                 log.setDescription(description);
                 log.setTimestamp(LocalDateTime.now());
-                collectionErrorLogRepository.save(log);
+                errorLogRepository.save(log);
             });
         } catch (Exception e) {
             log.warn("Failed to persist collection error log: {}", e.getMessage());
