@@ -422,10 +422,16 @@ export default function Report() {
                 <h4 className="font-bold text-sm text-gray-900">
                   Першоджерела відгуків:
                   {drilldownFilter.competitorName && <span className="text-blue-700 font-bold tracking-tight ml-1">«{drilldownFilter.competitorName}»</span>}
-                  {drilldownFilter.aspectName && (
-                    <span className="text-gray-600 ml-1">
-                      ● Аспект: <span className="font-bold text-indigo-700">{drilldownFilter.aspectName}</span>
-                    </span>
+                  {drilldownFilter.aspectName && (!drilldownFilter.sourceReviewIds || drilldownFilter.sourceReviewIds.length === 0) && (
+                      <span className="text-gray-600 ml-1">
+                        ● Аспект: <span className="font-bold text-indigo-700">{drilldownFilter.aspectName}</span>
+                      </span>
+                  )}
+
+                  {drilldownFilter.aspectName && drilldownFilter.sourceReviewIds && drilldownFilter.sourceReviewIds.length > 0 && (
+                      <span className="text-gray-600 ml-1">
+                        ● <span className="font-bold text-indigo-700">{drilldownFilter.aspectName}</span>
+                      </span>
                   )}
                 </h4>
               </div>
@@ -455,14 +461,21 @@ export default function Report() {
                       <div className="flex justify-between items-center mb-2 border-b border-gray-50 pb-2">
                         <span className="font-bold text-gray-800 text-xs uppercase tracking-wider">{rev.competitorName}</span>
                         <div className="flex items-center gap-2">
-                          {rev.sentiment === 'positive' ? (
-                            <span className="bg-emerald-50 text-emerald-700 text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1 font-medium border border-emerald-100/50">
-                              <ThumbsUp className="w-3 h-3" /> Позитив
-                            </span>
-                          ) : (
-                            <span className="bg-rose-50 text-rose-700 text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1 font-medium border border-rose-100/50">
-                              <ThumbsDown className="w-3 h-3" /> Негатив
-                            </span>
+                          {/* Показуємо бейджі тональності ТІЛЬКИ якщо це НЕ вільна характеристика */}
+                          {(!drilldownFilter.sourceReviewIds || drilldownFilter.sourceReviewIds.length === 0) && (
+                              <>
+                                {rev.sentiment === 'positive' && (
+                                    <span className="bg-emerald-50 text-emerald-700 text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1 font-medium border border-emerald-100/50">
+                                      <ThumbsUp className="w-3 h-3" /> Позитив
+                                    </span>
+                                )}
+                                {rev.sentiment === 'negative' && (
+                                    <span className="bg-rose-50 text-rose-700 text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1 font-medium border border-rose-100/50">
+                                      <ThumbsDown className="w-3 h-3" /> Негатив
+                                    </span>
+                                )}
+                                {/* Якщо neutral — просто не показуємо бейдж тональності, що є правильним UX */}
+                              </>
                           )}
                           <span className="text-amber-500 font-mono text-xs font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100/50">{rev.ratingValue}★</span>
                         </div>
