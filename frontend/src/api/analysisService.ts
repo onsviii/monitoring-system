@@ -33,6 +33,7 @@ export interface SelectedPlace {
   name: string;
   address?: string;
   rating?: number;
+  location: Location;
 }
 
 export interface CreateAnalysisRequest {
@@ -67,6 +68,8 @@ export interface CompetitorDto {
   rating?: number;
   reviewCount: number;
   isOwn: boolean;
+  location: Location;
+  distance?: number;
   aspects?: Array<{
     aspect: string;
     averagePolarity: number;

@@ -9,6 +9,7 @@ import ua.bkr.monitor.mapper.ReportMapper;
 import ua.bkr.monitor.mapper.ReviewMapper;
 import ua.bkr.monitor.model.*;
 import ua.bkr.monitor.model.enums.Aspect;
+import ua.bkr.monitor.model.record.Location;
 import ua.bkr.monitor.repository.*;
 
 import java.util.List;
@@ -68,10 +69,12 @@ public class ReportService {
                 recommendationSourceRepository.findByRecommendationIdIn(recommendationIds).stream()
                         .collect(Collectors.groupingBy(rs -> rs.getRecommendation().getId()));
 
-        String ownPlaceId = userProfileRepository.findPlaceIdByUserId(userId);
+        UserProfile userProfile = userProfileRepository.findById(userId).orElse(null);
+        String ownPlaceId = userProfile != null ? userProfile.getGooglePlaceId() : null;
+        Location userLocation = userProfile != null ? userProfile.getLocation() : null;
 
         List<CompetitorDto> competitorDtos = competitors.stream()
-                .map(c -> reportMapper.toCompetitorDto(c, ownPlaceId, reviewsMap, aspectsMap, characteristicsMap, charSourcesMap))
+                .map(c -> reportMapper.toCompetitorDto(c, ownPlaceId, userLocation, reviewsMap, aspectsMap, characteristicsMap, charSourcesMap))
                 .toList();
 
         List<RecommendationDto> recommendationDtos = recommendations.stream()

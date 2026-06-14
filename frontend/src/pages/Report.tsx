@@ -152,16 +152,11 @@ export default function Report() {
   const competitors = React.useMemo(() => {
     if (analysisReport && analysisReport.competitors && analysisReport.competitors.length > 0) {
       const radarItems = analysisReport.aggregatedStatistics?.radarChart || [];
+
       return analysisReport.competitors.map(comp => {
         const matchedRadar = radarItems.find(r => r.competitorId === comp.id || r.competitorName === comp.name);
-        
-        // Мапимо полярність -1.0 ... 1.0 на відповідні заспектні оцінки
-        const defaultAspects = {
-          service: 0,
-          product_quality: 0,
-          price: 0,
-          location: 0,
-        };
+
+        const defaultAspects = { service: 0, product_quality: 0, price: 0, location: 0 };
 
         const aspects = matchedRadar ? {
           service: matchedRadar.aspects.SERVICE ?? 0,
@@ -181,12 +176,20 @@ export default function Report() {
           id: comp.id,
           name: comp.isOwn ? `${businessName} (Ви)` : comp.name,
           type: comp.isOwn ? 'Ваш заклад' : 'Конкурент',
-          distance: comp.isOwn ? '0.0 км' : '0.5 км',
+
+          distance: comp.isOwn
+              ? '0 м'
+              : (comp.distance != null
+                  ? (comp.distance < 1
+                      ? `${Math.round(comp.distance * 1000)} м`
+                      : `${comp.distance.toFixed(1)} км`)
+                  : 'Невідомо'),
+
           reviewsCount: comp.reviewCount,
           rating: comp.rating,
-          coordinates: comp.isOwn ? { x: 50, y: 45 } : { x: 30 + (Math.sin(comp.id.charCodeAt(0)) * 20 + 20), y: 25 + (Math.cos(comp.id.charCodeAt(0)) * 20 + 20) },
-          latitude: comp.isOwn ? 49.8397 : 49.8397 + (Math.sin(comp.id.charCodeAt(0)) * 0.02),
-          longitude: comp.isOwn ? 24.0297 : 24.0297 + (Math.cos(comp.id.charCodeAt(0)) * 0.02),
+          coordinates: { x: 0, y: 0 },
+          latitude: comp.location?.latitude ?? 49.8397,
+          longitude: comp.location?.longitude ?? 24.0297,
           aspects: aspects,
           uniqueTags: mappedTags,
           isOwn: comp.isOwn || false,

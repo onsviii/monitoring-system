@@ -14,6 +14,7 @@ public record CompetitorDto(
         int reviewCount,
         boolean isOwn,
         Location location,
+        Double distance,
         List<AspectDto> aspects,
         List<FreeCharacteristicDto> freeCharacteristics
 ) {}

@@ -281,7 +281,8 @@ export default function Dashboard() {
             placeId: candidate.googlePlaceId,
             name: candidate.name,
             address: candidate.address,
-            rating: candidate.rating
+            rating: candidate.rating,
+            location: candidate.location
           }));
 
       const response = await createAnalysis({

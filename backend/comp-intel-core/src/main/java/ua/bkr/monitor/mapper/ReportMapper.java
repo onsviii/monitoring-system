@@ -5,6 +5,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import ua.bkr.monitor.dto.*;
 import ua.bkr.monitor.model.*;
+import ua.bkr.monitor.model.record.Location;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,13 +28,16 @@ public interface ReportMapper {
     );
 
     @Mapping(target = "nicheCode", source = "competitor.niche.displayName")
+    @Mapping(target = "location", source = "competitor.location")
     @Mapping(target = "isOwn", expression = "java( competitor.getExternalApiId() != null && competitor.getExternalApiId().equals(ownPlaceId) )")
     @Mapping(target = "reviewCount", expression = "java( getReviewCount(competitor.getId(), reviewsMap) )")
+    @Mapping(target = "distance", expression = "java( calculateDistance(competitor.getLocation(), userLocation) )")
     @Mapping(target = "aspects", expression = "java( mapAspects(competitor.getId(), aspectsMap) )")
     @Mapping(target = "freeCharacteristics", expression = "java( mapCharacteristics(competitor.getId(), characteristicsMap, charSourcesMap) )")
     CompetitorDto toCompetitorDto(
             Competitor competitor,
             String ownPlaceId,
+            Location userLocation,
             @Context Map<UUID, List<Review>> reviewsMap,
             @Context Map<UUID, List<AspectSentiment>> aspectsMap,
             @Context Map<UUID, List<FreeCharacteristic>> characteristicsMap,
@@ -90,5 +94,23 @@ public interface ReportMapper {
         return recSourcesMap.getOrDefault(recId, Collections.emptyList()).stream()
                 .map(rs -> rs.getReview().getId())
                 .toList();
+    }
+
+    default Double calculateDistance(Location a, Location b) {
+        if (a == null || b == null
+                || a.latitude() == null || a.longitude() == null
+                || b.latitude() == null || b.longitude() == null) {
+            return null;
+        }
+        double earthRadius = 6371.0;
+        double dLat = Math.toRadians(b.latitude() - a.latitude());
+        double dLon = Math.toRadians(b.longitude() - a.longitude());
+        double sinLat = Math.sin(dLat / 2);
+        double sinLon = Math.sin(dLon / 2);
+        double h = sinLat * sinLat
+                + Math.cos(Math.toRadians(a.latitude()))
+                * Math.cos(Math.toRadians(b.latitude()))
+                * sinLon * sinLon;
+        return Math.round(2 * earthRadius * Math.asin(Math.sqrt(h)) * 10.0) / 10.0;
     }
 }
