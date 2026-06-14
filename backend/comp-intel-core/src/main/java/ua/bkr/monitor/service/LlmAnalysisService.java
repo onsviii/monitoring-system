@@ -14,10 +14,7 @@ import ua.bkr.monitor.repository.AnalysisSessionRepository;
 import ua.bkr.monitor.repository.LLMInteractionLogRepository;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -67,7 +64,8 @@ public class LlmAnalysisService {
         String response = call(system, formatReviews(reviews),
                 TEMPERATURE_LOW, sessionId, "CHARACTERISTICS");
 
-        return parseList(response, ExtractedCharacteristic.class);
+        List<ExtractedCharacteristic> parsed = parseList(response, ExtractedCharacteristic.class);
+        return validateCharacteristics(parsed, reviews.size());
     }
 
     public List<GeneratedRecommendation> generateRecommendations(
@@ -105,9 +103,12 @@ public class LlmAnalysisService {
                 formatReviews(allReviews)
         );
 
+        log.info("Generating recommendations for session {} with prompt '{}'", sessionId, system + user);
+
         String response = call(system, user, TEMPERATURE_LOW, sessionId, "RECOMMENDATIONS");
 
-        return parseList(response, GeneratedRecommendation.class);
+        List<GeneratedRecommendation> parsed = parseList(response, GeneratedRecommendation.class);
+        return validateRecommendations(parsed, allReviews.size());
     }
 
     public String chat(String userMessage, String reportContext, List<ChatTurn> history, UUID sessionId) {
@@ -182,6 +183,42 @@ public class LlmAnalysisService {
             log.error("Failed to parse JSON response: {}", json);
             return List.of();
         }
+    }
+
+    private List<ExtractedCharacteristic> validateCharacteristics(List<ExtractedCharacteristic> raw, int reviewCount) {
+        return raw.stream()
+                .filter(c -> hasText(c.text()))
+                .map(c -> new ExtractedCharacteristic(
+                        c.text().trim(),
+                        sanitizeIndices(c.sourceIndices(), reviewCount)
+                ))
+                .filter(c -> !c.sourceIndices().isEmpty())
+                .toList();
+    }
+
+    private List<GeneratedRecommendation> validateRecommendations(List<GeneratedRecommendation> raw, int reviewCount) {
+        return raw.stream()
+                .filter(r -> hasText(r.text()))
+                .map(r -> new GeneratedRecommendation(
+                        r.text().trim(),
+                        sanitizeIndices(r.sourceIndices(), reviewCount)
+                ))
+                .filter(r -> !r.sourceIndices().isEmpty())
+                .toList();
+    }
+
+    private List<Integer> sanitizeIndices(List<Integer> indices, int reviewCount) {
+        if (indices == null) return List.of();
+
+        return indices.stream()
+                .filter(Objects::nonNull)
+                .filter(i -> i >= 0 && i < reviewCount)
+                .distinct()
+                .toList();
+    }
+
+    private boolean hasText(String text) {
+        return text != null && !text.isBlank();
     }
 
     private void saveLog(UUID sessionId, String component, String prompt, String response, String providerName) {
