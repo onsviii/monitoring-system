@@ -22,6 +22,7 @@ import {
   Building2,
   ChevronRight
 } from 'lucide-react';
+import {STORAGE_KEYS} from "@/src/config/constants.ts";
 
 export default function ProfileSetup() {
   const navigate = useNavigate();
@@ -164,7 +165,8 @@ export default function ProfileSetup() {
         });
         
         const newToken = await currentUser.getIdToken(true);
-        localStorage.setItem('cim_access_token', newToken);
+        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, newToken);
+        localStorage.setItem(STORAGE_KEYS.TOKEN, newToken);
       } catch (backendErr) {
         console.warn("Помилка при реєстрації профілю на зовнішньому бекенді:", backendErr);
         // Не блокуємо розробку чи тестування, якщо локальний бекенд не працює під час рендеру в Клауд Рані

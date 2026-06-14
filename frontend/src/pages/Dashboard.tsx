@@ -15,8 +15,6 @@ import {
   getNiches,
   NicheDto
 } from '../api/analysisService';
-import { auth, db } from '../config/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 import {
   MapPin,
   ChevronRight,
@@ -92,6 +90,8 @@ export default function Dashboard() {
       setIsLoadingProfile(true);
       try {
         const profile = await getProfile();
+
+        // Якщо бекенд повернув валідний профіль
         if (profile && profile.businessName && active) {
           setBusinessName(profile.businessName);
           if (profile.nicheCode) setNicheCode(profile.nicheCode);
@@ -104,51 +104,21 @@ export default function Dashboard() {
           }
 
           setHasProfile(true);
-          setIsLoadingProfile(false);
-          return;
+        } else if (active) {
+          // Якщо профілю немає на бекенді
+          setHasProfile(false);
         }
       } catch (err) {
         console.warn("Не вдалося завантажити профіль з бекенду:", err);
-      }
-
-      try {
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          const userDocSnap = await getDoc(doc(db, 'users', currentUser.uid));
-          if (userDocSnap.exists() && active) {
-            const data = userDocSnap.data();
-            const fbName = data.businessName;
-            if (fbName) {
-              setBusinessName(fbName);
-              if (data.nicheCode) setNicheCode(data.nicheCode);
-
-              if (data.location) {
-                setLocation({
-                  latitude: data.location.latitude,
-                  longitude: data.location.longitude
-                });
-              }
-
-              setHasProfile(true);
-              setIsLoadingProfile(false);
-              return;
-            }
-          }
+        if (active) {
+          setHasProfile(false);
         }
-      } catch (err) {
-        console.warn("Не вдалося завантажити профіль з Firestore:", err);
-      }
-
-      if (active) {
-        setHasProfile(false);
-        setIsLoadingProfile(false);
+      } finally {
+        if (active) {
+          setIsLoadingProfile(false);
+        }
       }
     }
-
-    fetchNiches();
-    fetchProfile();
-    return () => { active = false; };
-  }, []);
 
   // Очистка таймера при розмонтуванні
   useEffect(() => {

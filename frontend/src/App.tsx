@@ -6,8 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { onIdTokenChanged, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db, handleFirestoreError, OperationType } from './config/firebase';
+import { auth } from './config/firebase';
 import { STORAGE_KEYS } from './config/constants';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -38,40 +37,21 @@ export default function App() {
       setUser(firebaseUser);
       if (firebaseUser) {
         try {
-          const idToken = await firebaseUser.getIdToken();
-          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, idToken);
-          localStorage.setItem(STORAGE_KEYS.TOKEN, idToken);
+          // Отримуємо JWT токен з Firebase
+          const idTokenResult = await firebaseUser.getIdTokenResult();
+          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, idTokenResult.token);
+          localStorage.setItem(STORAGE_KEYS.TOKEN, idTokenResult.token);
+          const role = idTokenResult.claims.role || 'owner';
+
+          setUserRole(role as string);
+          localStorage.setItem(STORAGE_KEYS.USER_ROLE, role as string);
+
         } catch (tokenErr) {
           console.error("Не вдалося отримати JWT токен:", tokenErr);
         }
-        try {
-          const path = `users/${firebaseUser.uid}`;
-          let userDocSnap;
-          try {
-            userDocSnap = await getDoc(doc(db, 'users', firebaseUser.uid));
-          } catch (firstErr) {
-            handleFirestoreError(firstErr, OperationType.GET, path);
-            throw firstErr; // keeps the flow expected downstream if they bypass handle error
-          }
-          if (userDocSnap.exists()) {
-            const role = userDocSnap.data().role;
-            setUserRole(role || 'owner');
-            localStorage.setItem(STORAGE_KEYS.USER_ROLE, role || 'owner');
-          } else {
-            // Якщо документа немає, визначаємо на основі пошти і створюємо його в Firestore
-            const determinedRole = firebaseUser.email?.toLowerCase().includes('operator')
-              ? 'operator'
-              : 'owner';
-            setUserRole(determinedRole);
-            localStorage.setItem(STORAGE_KEYS.USER_ROLE, determinedRole);
-          }
-        } catch (err) {
-          console.error("Помилка завантаження ролі з Firestore:", err);
-          const localRole = localStorage.getItem(STORAGE_KEYS.USER_ROLE);
-          setUserRole(localRole || (firebaseUser.email?.toLowerCase().includes('operator') ? 'operator' : 'owner'));
-        }
       } else {
         setUserRole(null);
+        localStorage.removeItem(STORAGE_KEYS.USER_ROLE);
       }
       setLoading(false);
     });

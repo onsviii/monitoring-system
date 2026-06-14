@@ -161,7 +161,7 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
         </div>
 
         <div className="text-[10px] text-gray-405 bg-gray-50 rounded-lg p-3 text-center border-l-2 border-gray-200 leading-relaxed">
-          Розрахунковий час виконання сесії: ~10-15 секунд. Оновлення сторінки не скине ваш загальний аналіз.
+          Аналіз може зайняти певний час. Оновлення сторінки не скине ваш загальний аналіз.
         </div>
       </div>
   );

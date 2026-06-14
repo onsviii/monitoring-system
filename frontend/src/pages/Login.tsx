@@ -10,10 +10,10 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signInWithPopup, 
-  GoogleAuthProvider 
+  GoogleAuthProvider,
+  getAdditionalUserInfo
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db, handleFirestoreError, OperationType } from '../config/firebase';
+import { auth } from '../config/firebase';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -47,28 +47,14 @@ export default function Login() {
       const user = userCredential.user;
       const idTokenResult = await user.getIdTokenResult();
 
-      // 2. Читання ролі
-      let userRole = USER_ROLES.BUSINESS_OWNER;
+      const userRole = idTokenResult.claims?.role || USER_ROLES.BUSINESS_OWNER;
 
-      if (idTokenResult.claims && idTokenResult.claims.role) {
-        userRole = idTokenResult.claims.role;
-      } else {
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-
-        if (userDocSnap.exists() && userDocSnap.data().role) {
-          userRole = userDocSnap.data().role;
-        }
-      }
-
-      // 3. Збереження токенів для apiClient
       localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, idTokenResult.token);
       localStorage.setItem(STORAGE_KEYS.TOKEN, idTokenResult.token);
-      localStorage.setItem(STORAGE_KEYS.USER_ROLE, userRole);
+      localStorage.setItem(STORAGE_KEYS.USER_ROLE, userRole as string);
 
       setIsSubmitting(false);
 
-      // 4. Маршрутизація
       if (activeTab === 'register') {
         navigate('/setup-profile');
       } else if (userRole === USER_ROLES.TECHNICAL_OPERATOR) {
@@ -105,45 +91,23 @@ export default function Login() {
       const userCredential = await signInWithPopup(auth, provider);
 
       const user = userCredential.user;
-      const idToken = await user.getIdToken();
+      const idTokenResult = await user.getIdTokenResult();
 
-      const determinedRole = USER_ROLES.BUSINESS_OWNER;
+      // Визначаємо, чи це нова реєстрація через Google
+      const additionalInfo = getAdditionalUserInfo(userCredential);
+      const isNewUser = additionalInfo?.isNewUser ?? false;
 
-      const userDocRef = doc(db, 'users', user.uid);
-      let userDocSnap;
-      try {
-        userDocSnap = await getDoc(userDocRef);
-      } catch (getErr) {
-        handleFirestoreError(getErr, OperationType.GET, `users/${user.uid}`);
-        throw getErr;
-      }
+      // Читаємо роль з токена або ставимо дефолтну
+      const userRole = idTokenResult.claims?.role || USER_ROLES.BUSINESS_OWNER;
 
-      let userRole = determinedRole;
-      let isNewUser = false;
-
-      if (userDocSnap.exists()) {
-        userRole = userDocSnap.data().role || 'owner';
-      } else {
-        isNewUser = true;
-        try {
-          await setDoc(userDocRef, {
-            role: determinedRole,
-            email: user.email,
-            createdAt: new Date().toISOString()
-          });
-
-        } catch (setErr) {
-          handleFirestoreError(setErr, OperationType.CREATE, `users/${user.uid}`);
-          throw setErr;
-        }
-      }
-
-      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, idToken);
-      localStorage.setItem(STORAGE_KEYS.TOKEN, idToken);
-      localStorage.setItem(STORAGE_KEYS.USER_ROLE, userRole);
+      // Зберігаємо токени для apiClient
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, idTokenResult.token);
+      localStorage.setItem(STORAGE_KEYS.TOKEN, idTokenResult.token);
+      localStorage.setItem(STORAGE_KEYS.USER_ROLE, userRole as string);
 
       setIsSubmitting(false);
 
+      // Маршрутизація
       if (isNewUser) {
         navigate('/setup-profile');
       } else if (userRole === USER_ROLES.TECHNICAL_OPERATOR) {
@@ -159,7 +123,7 @@ export default function Login() {
       } else if (err?.code === 'auth/popup-blocked') {
         setErrorMessage('Браузер заблокував спливаюче вікно Google. Спробуйте увійти за допомогою Email/Пароля або дозвольте спливаючі вікна для цього сайту.');
       } else {
-        setErrorMessage('Сталася помилка входу через Google (можливо, доступ заблоковано вбудованим фреймом). Будь ласка, скористайтеся входом за Email/Паролем.');
+        setErrorMessage('Сталася помилка входу через Google. Будь ласка, скористайтеся входом за Email/Паролем.');
       }
     }
   };
