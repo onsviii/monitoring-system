@@ -355,12 +355,10 @@ public class PipelineOrchestrator {
             fc = freeCharacteristicRepository.save(fc);
 
             for (Integer idx : ec.sourceIndices()) {
-                if (idx >= 0 && idx < compReviews.size()) {
-                    CharacteristicSource source = new CharacteristicSource();
-                    source.setCharacteristic(fc);
-                    source.setReview(compReviews.get(idx));
-                    characteristicSourceRepository.save(source);
-                }
+                CharacteristicSource source = new CharacteristicSource();
+                source.setCharacteristic(fc);
+                source.setReview(compReviews.get(idx));
+                characteristicSourceRepository.save(source);
             }
         }
 
