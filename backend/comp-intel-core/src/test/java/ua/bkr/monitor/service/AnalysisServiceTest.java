@@ -91,7 +91,7 @@ class AnalysisServiceTest {
 
         CreateAnalysisRequest request = new CreateAnalysisRequest(
             "COFFEE", "Report", new Location(50.0, 30.0), 2.0,
-            List.of(new CreateAnalysisRequest.SelectedPlace("place-1", "Cafe", null, null))
+            List.of(new CreateAnalysisRequest.SelectedPlace("place-1", "Cafe", null, null, null))
         );
 
         AnalysisSession session = makeSession(SESSION_ID, user, SessionStatus.PENDING, AnalysisStage.COLLECTING_DATA);
@@ -118,7 +118,7 @@ class AnalysisServiceTest {
 
         CreateAnalysisRequest request = new CreateAnalysisRequest(
             "COFFEE", "Report", new Location(50.0, 30.0), 2.0,
-            List.of(new CreateAnalysisRequest.SelectedPlace("place-1", "Cafe", null, null))
+            List.of(new CreateAnalysisRequest.SelectedPlace("place-1", "Cafe", null, null, null))
         );
 
         assertThatThrownBy(() -> service.create(USER_ID, request))
@@ -132,7 +132,7 @@ class AnalysisServiceTest {
 
         CreateAnalysisRequest request = new CreateAnalysisRequest(
             "UNKNOWN", "Report", new Location(50.0, 30.0), 2.0,
-            List.of(new CreateAnalysisRequest.SelectedPlace("place-1", "Cafe", null, null))
+            List.of(new CreateAnalysisRequest.SelectedPlace("place-1", "Cafe", null, null, null))
         );
 
         assertThatThrownBy(() -> service.create(USER_ID, request))

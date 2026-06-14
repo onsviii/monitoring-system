@@ -89,6 +89,7 @@ class ReportMapperTest {
         CompetitorDto dto = mapper.toCompetitorDto(
                 competitor,
                 "place-1",
+                null,
                 reviewsMap,
                 aspectsMap,
                 characteristicsMap,
@@ -163,6 +164,8 @@ class ReportMapperTest {
                 4.5,
                 3,
                 true,
+                null,
+                null,
                 List.of(),
                 List.of()
         );

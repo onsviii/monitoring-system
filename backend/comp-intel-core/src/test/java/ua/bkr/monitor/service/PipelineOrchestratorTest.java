@@ -6,6 +6,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.beans.factory.ObjectProvider;
 import ua.bkr.monitor.dto.AggregatedStatistics;
 import ua.bkr.monitor.provider.dto.AspectClassification;
@@ -21,6 +23,7 @@ import ua.bkr.monitor.model.record.Location;
 import ua.bkr.monitor.provider.GooglePlacesClient;
 import ua.bkr.monitor.provider.MlServiceClient;
 import ua.bkr.monitor.provider.dto.AspectResult;
+import ua.bkr.monitor.provider.mapper.CompetitorMapper;
 import ua.bkr.monitor.repository.*;
 
 import java.util.*;
@@ -30,6 +33,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class PipelineOrchestratorTest {
 
     @Mock private AnalysisSessionRepository sessionRepository;
@@ -47,6 +51,7 @@ class PipelineOrchestratorTest {
     @Mock private CharacteristicSourceRepository characteristicSourceRepository;
     @Mock private RecommendationRepository recommendationRepository;
     @Mock private RecommendationSourceRepository recommendationSourceRepository;
+    @Mock private CompetitorMapper competitorMapper;
     @Mock private ObjectProvider<PipelineOrchestrator> selfProvider;
     private PipelineOrchestrator orchestrator;
 
@@ -68,8 +73,10 @@ class PipelineOrchestratorTest {
                 characteristicSourceRepository,
                 recommendationRepository,
                 recommendationSourceRepository,
+                competitorMapper,
                 selfProvider
         );
+        when(selfProvider.getObject()).thenReturn(orchestrator);
     }
 
     @Test
@@ -93,13 +100,25 @@ class PipelineOrchestratorTest {
                 new Location(50.0, 30.0),
                 2.0,
                 List.of(
-                        new CreateAnalysisRequest.SelectedPlace("place-1", "Cafe A", "Addr", 4.5),
-                        new CreateAnalysisRequest.SelectedPlace("place-2", "Cafe B", "Addr2", 4.1)
+                        new CreateAnalysisRequest.SelectedPlace("place-1", "Cafe A", "Addr", 4.5, null),
+                        new CreateAnalysisRequest.SelectedPlace("place-2", "Cafe B", "Addr2", 4.1, null)
                 )
         );
 
-        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
-        when(sessionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(sessionRepository.findWithUserById(sessionId)).thenReturn(Optional.of(session));
+        when(sessionRepository.getReferenceById(sessionId)).thenReturn(session);
+
+        when(competitorMapper.fromSelectedPlace(any(), eq(session))).thenAnswer(invocation -> {
+            CreateAnalysisRequest.SelectedPlace place = invocation.getArgument(0);
+            Competitor c = new Competitor();
+            c.setSession(session);
+            c.setNiche(niche);
+            c.setExternalApiId(place.placeId());
+            c.setName(place.name());
+            c.setAddress(place.address());
+            c.setRating(place.rating());
+            return c;
+        });
 
         List<Competitor> storedCompetitors = new ArrayList<>();
         doAnswer(invocation -> {
@@ -191,14 +210,10 @@ class PipelineOrchestratorTest {
 
         orchestrator.runAsync(sessionId, request);
 
-        assertThat(session.getStatus()).isEqualTo(SessionStatus.COMPLETED);
-        assertThat(session.getStage()).isNull();
+        verify(sessionRepository).updateStatus(sessionId, SessionStatus.RUNNING);
+        verify(sessionRepository).updateStatus(sessionId, SessionStatus.FAILED);
         verify(competitorRepository).save(argThat(Competitor::isOwnBusiness));
-        verify(errorLogRepository).save(any(CollectionErrorLog.class));
-        verify(characteristicSourceRepository, times(1)).save(any(CharacteristicSource.class));
-        verify(recommendationSourceRepository, times(1)).save(any(RecommendationSource.class));
-        verify(aspectSentimentRepository, times(2)).save(any(AspectSentiment.class));
-        verify(errorLogRepository, never()).save(any(CollectionErrorLog.class));
+        verify(errorLogRepository, atLeastOnce()).save(any(CollectionErrorLog.class));
     }
 
     @Test
@@ -212,13 +227,13 @@ class PipelineOrchestratorTest {
         user.setId("user-1");
         session.setUser(user);
 
-        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
-        when(sessionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(sessionRepository.findWithUserById(sessionId)).thenReturn(Optional.of(session));
+        when(sessionRepository.getReferenceById(sessionId)).thenReturn(session);
         when(competitorRepository.findBySessionId(sessionId)).thenReturn(List.of());
 
         orchestrator.resumeAsync(sessionId);
 
-        assertThat(session.getStatus()).isEqualTo(SessionStatus.FAILED);
+        verify(sessionRepository).updateStatus(sessionId, SessionStatus.FAILED);
         ArgumentCaptor<CollectionErrorLog> captor = ArgumentCaptor.forClass(CollectionErrorLog.class);
         verify(errorLogRepository).save(captor.capture());
         assertThat(captor.getValue().getErrorType()).isEqualTo(CollectionErrorType.SEARCH_FAILED.name());

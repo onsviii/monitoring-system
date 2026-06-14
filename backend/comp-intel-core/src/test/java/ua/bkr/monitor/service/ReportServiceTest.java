@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import ua.bkr.monitor.dto.*;
 import ua.bkr.monitor.dto.SourcesResponse.ReviewSourceDto;
 import ua.bkr.monitor.mapper.ReportMapper;
+import ua.bkr.monitor.mapper.ReviewMapper;
 import ua.bkr.monitor.model.*;
 import ua.bkr.monitor.model.enums.Aspect;
 import ua.bkr.monitor.repository.*;
@@ -37,6 +38,7 @@ class ReportServiceTest {
     @Mock private RecommendationSourceRepository recommendationSourceRepository;
     @Mock private UserProfileRepository userProfileRepository;
     @Mock private ReportMapper reportMapper;
+    @Mock private ReviewMapper reviewMapper;
     @InjectMocks private ReportService service;
 
     @Test
@@ -101,7 +103,7 @@ class ReportServiceTest {
         recSource.setReview(review);
 
         CompetitorDto competitorDto = new CompetitorDto(
-                competitorId, "Cafe A", "Addr", "COFFEE", 4.6, 1, false, List.of(), List.of()
+                competitorId, "Cafe A", "Addr", "COFFEE", 4.6, 1, false, null, null, List.of(), List.of()
         );
         RecommendationDto recommendationDto = new RecommendationDto(
                 recommendationId, "Improve service", List.of(reviewId)
@@ -126,8 +128,10 @@ class ReportServiceTest {
         when(characteristicRepository.findByCompetitorIdIn(List.of(competitorId))).thenReturn(List.of(characteristic));
         when(characteristicSourceRepository.findByCharacteristicIdIn(List.of(characteristicId))).thenReturn(List.of(charSource));
         when(recommendationSourceRepository.findByRecommendationIdIn(List.of(recommendationId))).thenReturn(List.of(recSource));
-        when(userProfileRepository.findPlaceIdByUserId(userId)).thenReturn("place-1");
-        when(reportMapper.toCompetitorDto(eq(competitor), eq("place-1"), anyMap(), anyMap(), anyMap(), anyMap()))
+        UserProfile userProfile = new UserProfile();
+        userProfile.setGooglePlaceId("place-1");
+        when(userProfileRepository.findById(userId)).thenReturn(Optional.of(userProfile));
+        when(reportMapper.toCompetitorDto(eq(competitor), eq("place-1"), any(), anyMap(), anyMap(), anyMap(), anyMap()))
                 .thenReturn(competitorDto);
         when(reportMapper.toRecommendationDto(eq(recommendation), anyMap())).thenReturn(recommendationDto);
         when(reportMapper.toReportResponse(eq(report), eq(session), anyList(), anyList())).thenReturn(expected);
@@ -202,21 +206,18 @@ class ReportServiceTest {
         missing.setReview(review);
         missing.setPolarity(null);
 
+        ReviewSourceDto expectedDto = new ReviewSourceDto(
+                review.getId(), null, review.getText(), review.getRating(),
+                review.getCreatedAt(), 1, 0.7f
+        );
+
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(aspectSentimentRepository.findByReviewCompetitorIdAndCategoryName(competitorId, Aspect.SERVICE))
                 .thenReturn(List.of(positive, neutral, missing));
+        when(reviewMapper.toDtoWithSentiment(review, positive)).thenReturn(expectedDto);
 
         SourcesResponse result = service.getSources(userId, sessionId, competitorId, Aspect.SERVICE);
 
-        assertThat(result.reviews()).containsExactly(
-                new ReviewSourceDto(
-                        review.getId(),
-                        review.getText(),
-                        review.getRating(),
-                        review.getCreatedAt(),
-                        1,
-                        0.7f
-                )
-        );
+        assertThat(result.reviews()).containsExactly(expectedDto);
     }
 }
