@@ -38,7 +38,7 @@ interface SentimentTrendChartProps {
 const colors = ['#10b981', '#f59e0b', '#d97706', '#ef4444', '#06b6d4'];
 
 export const SentimentTrendChart: React.FC<SentimentTrendChartProps> = ({ id, businessName, trendData, heightClass }) => {
-  const ownName = `${businessName || 'Копальня кави'} (Ви)`;
+  const ownName = businessName ? `${businessName} (Ви)` : 'Ваш заклад (Ви)';
   const rawTrends = trendData || [];
 
   // Resolve own competitor names dynamically based on user context

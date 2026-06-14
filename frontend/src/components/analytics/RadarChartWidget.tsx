@@ -36,7 +36,7 @@ interface RadarChartWidgetProps {
 const colors = ['#10b981', '#f59e0b', '#d97706', '#ef4444', '#06b6d4'];
 
 export const RadarChartWidget: React.FC<RadarChartWidgetProps> = ({ id, businessName, radarData, heightClass, hideLegend = false }) => {
-  const ownName = `${businessName || 'Копальня кави'} (Ви)`;
+  const ownName = businessName ? `${businessName} (Ви)` : 'Ваш заклад (Ви)';
 
   // Resolve and update competitor names with the dynamically fetched businessName
   const competitorsList = (radarData || []).map(comp => {

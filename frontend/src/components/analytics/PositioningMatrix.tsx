@@ -35,7 +35,7 @@ interface PositioningMatrixProps {
 const colors = ['#10b981', '#f59e0b', '#d97706', '#ef4444', '#06b6d4'];
 
 export const PositioningMatrix: React.FC<PositioningMatrixProps> = ({ id, businessName, matrixData, heightClass, isCompact = false }) => {
-  const ownName = `${businessName || 'Копальня кави'} (Ви)`;
+  const ownName = businessName ? `${businessName} (Ви)` : 'Ваш заклад (Ви)';
 
   const resolvedData = (matrixData || []).map(item => {
     if (item.isOwn || item.competitorId === 'own_business' || item.competitorName.includes('(Ви)')) {
