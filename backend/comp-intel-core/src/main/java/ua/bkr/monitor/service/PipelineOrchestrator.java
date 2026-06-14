@@ -527,9 +527,7 @@ public class PipelineOrchestrator {
                 cleanReport(sessionId);
                 cleanCharacteristics(sessionId);
             }
-            case GENERATING_REPORT -> {
-                cleanReport(sessionId);
-            }
+            case GENERATING_REPORT -> cleanReport(sessionId);
             default -> {}
         }
     }
