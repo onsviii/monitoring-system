@@ -41,71 +41,40 @@ export default function Login() {
     setIsSubmitting(true);
     setErrorMessage('');
 
-    // Автоматично визначаємо роль: якщо в email є слово "operator", то роль 'operator' (тех. оператор).
-    // Інакше роль 'owner' (власник бізнесу).
-    const determinedRole = email.toLowerCase().includes('operator') 
-      ? USER_ROLES.TECHNICAL_OPERATOR 
-      : USER_ROLES.BUSINESS_OWNER;
-
     try {
+      // 1. Автентифікація через Firebase
       let userCredential;
       if (activeTab === 'login') {
         userCredential = await signInWithEmailAndPassword(auth, email, password);
       } else {
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
       }
-      
+
       const user = userCredential.user;
-      const idToken = await user.getIdToken();
+      const idTokenResult = await user.getIdTokenResult();
 
-      // Отримуємо або створюємо роль у Firestore
-      const userDocRef = doc(db, 'users', user.uid);
-      let userRole = determinedRole;
+      // 2. Читання ролі
+      let userRole = USER_ROLES.BUSINESS_OWNER;
 
-      if (activeTab === 'login') {
-        let userDocSnap;
-        try {
-          userDocSnap = await getDoc(userDocRef);
-        } catch (getErr) {
-          handleFirestoreError(getErr, OperationType.GET, `users/${user.uid}`);
-          throw getErr;
-        }
-        if (userDocSnap.exists()) {
-          userRole = userDocSnap.data().role || 'owner';
-        } else {
-          // Якщо документа ще не існує в Firestore, записуємо визначену роль
-          try {
-            await setDoc(userDocRef, {
-              role: determinedRole,
-              email: user.email
-            });
-          } catch (setErr) {
-            handleFirestoreError(setErr, OperationType.CREATE, `users/${user.uid}`);
-            throw setErr;
-          }
-        }
+      if (idTokenResult.claims && idTokenResult.claims.role) {
+        userRole = idTokenResult.claims.role;
       } else {
-        // При реєстрації записуємо лише базову роль
-        try {
-          await setDoc(userDocRef, {
-            role: determinedRole,
-            email: user.email,
-            createdAt: new Date().toISOString()
-          });
-        } catch (setErr) {
-          handleFirestoreError(setErr, OperationType.CREATE, `users/${user.uid}`);
-          throw setErr;
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists() && userDocSnap.data().role) {
+          userRole = userDocSnap.data().role;
         }
       }
 
-      // Записуємо токен та роль у localStorage
-      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, idToken);
-      localStorage.setItem(STORAGE_KEYS.TOKEN, idToken); // Для повної сумісності
+      // 3. Збереження токенів для apiClient
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, idTokenResult.token);
+      localStorage.setItem(STORAGE_KEYS.TOKEN, idTokenResult.token);
       localStorage.setItem(STORAGE_KEYS.USER_ROLE, userRole);
 
       setIsSubmitting(false);
 
-      // Перенаправляємо відповідно до ролі чи флоу реєстрації
+      // 4. Маршрутизація
       if (activeTab === 'register') {
         navigate('/setup-profile');
       } else if (userRole === USER_ROLES.TECHNICAL_OPERATOR) {

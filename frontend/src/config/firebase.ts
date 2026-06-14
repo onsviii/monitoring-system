@@ -72,5 +72,3 @@ async function testConnection() {
   }
 }
 testConnection();
-
-
