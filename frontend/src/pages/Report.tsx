@@ -207,7 +207,6 @@ export default function Report() {
         id: rec.id || `rec_dyn_${idx}`,
         title: rec.title || 'Стратегічна рекомендація',
         description: rec.text,
-        impact: rec.priority === 'HIGH' ? 'HIGH' : (rec.priority === 'MEDIUM' ? 'MEDIUM' : 'LOW'),
         aspect: 'service',
         sourcesCount: rec.sourceReviewIds ? rec.sourceReviewIds.length : 0,
         sourceReviewIds: rec.sourceReviewIds || [],
@@ -827,11 +826,6 @@ export default function Report() {
                 <div key={rec.id} className="border-l-2 border-blue-500 bg-gray-50/50 p-3.5 rounded-r-lg space-y-2">
                   <div className="flex justify-between items-start gap-1">
                     <h4 className="font-semibold text-xs text-gray-900">{rec.title}</h4>
-                    <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${
-                      rec.impact === 'HIGH' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {rec.impact}
-                    </span>
                   </div>
                   <p className="text-[11.5px] text-gray-500 leading-relaxed">{rec.description}</p>
                   

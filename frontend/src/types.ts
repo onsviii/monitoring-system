@@ -30,7 +30,6 @@ export interface Recommendation {
   id: string;
   title: string;
   description: string;
-  impact: 'HIGH' | 'MEDIUM' | 'LOW';
   aspect: string;
   sourcesCount: number;
   references: string[];
