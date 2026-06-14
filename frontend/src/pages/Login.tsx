@@ -14,12 +14,6 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../config/firebase';
-import { createProfile } from '../api/profileService';
-
-// Helper to encode Unicode strings with btoa safely
-const safeBtoa = (str: string) => {
-  return btoa(unescape(encodeURIComponent(str)));
-};
 
 export default function Login() {
   const navigate = useNavigate();
