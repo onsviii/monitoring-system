@@ -25,8 +25,6 @@ import SentimentTrendChart from '../components/analytics/SentimentTrendChart';
 import ReportMap from '../components/ui/ReportMap';
 import StrategyAIChat from '../components/analytics/StrategyAIChat';
 import { getAnalysisReport, getAnalysisStatus, CompetitorReportResponse, updateReportName, getAnalysisSources, getSourcesByReviewIds, type ReviewAspects } from '../api/analysisService';
-import { auth, db } from '../config/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 import { getProfile } from '../api/profileService';
 
 const ChartSkeletonLoader = ({ text }: { text: string }) => (
@@ -115,24 +113,6 @@ export default function Report() {
       }
 
       if (signal.aborted) return;
-
-      // 2. Фолбек на Firestore
-      try {
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          const userDocSnap = await getDoc(doc(db, 'users', currentUser.uid));
-
-          if (userDocSnap.exists() && !signal.aborted) {
-            const data = userDocSnap.data();
-            if (data.businessName) setBusinessName(data.businessName);
-            if (data.address) setBusinessAddress(data.address);
-            if (data.nicheCode || data.niche) setBusinessNiche(data.nicheCode || data.niche);
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn("Не вдалося завантажити профіль з Firestore:", err);
-      }
     }
 
     loadName(abortController.signal);
