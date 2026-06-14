@@ -24,6 +24,7 @@ import ua.bkr.monitor.model.record.IndexedReview;
 import ua.bkr.monitor.provider.GooglePlacesClient;
 import ua.bkr.monitor.provider.MlServiceClient;
 import ua.bkr.monitor.provider.dto.AspectClassification;
+import ua.bkr.monitor.provider.mapper.CompetitorMapper;
 import ua.bkr.monitor.repository.*;
 
 import java.time.LocalDateTime;
@@ -56,6 +57,7 @@ public class PipelineOrchestrator {
     private final CharacteristicSourceRepository characteristicSourceRepository;
     private final RecommendationRepository recommendationRepository;
     private final RecommendationSourceRepository recommendationSourceRepository;
+    private final CompetitorMapper competitorMapper;
     private final ObjectProvider<PipelineOrchestrator> selfProvider;
 
     @Async
@@ -111,7 +113,7 @@ public class PipelineOrchestrator {
         selfProvider.getObject().updateStage(session.getId(), AnalysisStage.COLLECTING_DATA);
 
         List<Competitor> competitors = request.selectedPlaces().stream()
-                .map(place -> mapToCompetitor(session, place))
+                .map(place -> competitorMapper.fromSelectedPlace(place, session))
                 .toList();
 
         competitorRepository.saveAll(competitors);
@@ -140,19 +142,6 @@ public class PipelineOrchestrator {
                 fetchAllReviews(competitors, session.getId());
 
         runAnonymization(session, competitors, rawReviews);
-    }
-
-    private Competitor mapToCompetitor(
-            AnalysisSession session, CreateAnalysisRequest.SelectedPlace place) {
-
-        Competitor c = new Competitor();
-        c.setSession(session);
-        c.setNiche(session.getBusinessNiche());
-        c.setExternalApiId(place.placeId());
-        c.setName(place.name());
-        c.setAddress(place.address());
-        c.setRating(place.rating());
-        return c;
     }
 
     private void runFromAnonymizing(AnalysisSession session) {
@@ -312,15 +301,7 @@ public class PipelineOrchestrator {
         }
 
         GooglePlacesClient.PlaceInfo info = googlePlacesClient.getPlaceInfo(userPlaceId);
-
-        Competitor own = new Competitor();
-        own.setSession(session);
-        own.setNiche(session.getBusinessNiche());
-        own.setExternalApiId(info.placeId());
-        own.setName(info.name());
-        own.setAddress(info.address());
-        own.setRating(info.rating());
-        own.setOwnBusiness(true);
+        Competitor own = competitorMapper.fromPlaceInfo(info, session);
         competitorRepository.save(own);
 
         List<Competitor> result = new ArrayList<>(competitors);
