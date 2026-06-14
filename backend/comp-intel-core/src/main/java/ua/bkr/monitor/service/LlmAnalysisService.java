@@ -169,13 +169,18 @@ public class LlmAnalysisService {
                     .replaceAll("(?s)```json\\s*", "")
                     .replace("```", "")
                     .trim();
+
+            if (clean.startsWith("{")) {
+                clean = "[" + clean + "]";
+            }
+
             return objectMapper.readValue(
                     clean,
                     objectMapper.getTypeFactory().constructCollectionType(List.class, type)
             );
         } catch (Exception e) {
             log.error("Failed to parse JSON response: {}", json);
-            throw new RuntimeException("JSON parsing failed", e);
+            return List.of();
         }
     }
 
