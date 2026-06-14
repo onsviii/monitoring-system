@@ -70,16 +70,16 @@ public class PipelineOrchestrator {
     public void runAsync(UUID sessionId, CreateAnalysisRequest request) {
         log.info("Starting analysis pipeline for session {}", sessionId);
         AnalysisSession session = sessionRepository.findWithUserById(sessionId).orElseThrow();
-        selfProvider.getObject().updateStatus(session, SessionStatus.RUNNING);
-        selfProvider.getObject().updateStage(session, AnalysisStage.COLLECTING_DATA);
+        selfProvider.getObject().updateStatus(session.getId(), SessionStatus.RUNNING);
+        selfProvider.getObject().updateStage(session.getId(), AnalysisStage.COLLECTING_DATA);
         try {
             runFromCollecting(session, request);
         } catch (DataCollectionException e) {
             log.warn("Data collection error for session {}: {}", sessionId, e.getMessage());
-            selfProvider.getObject().failSession(session, e.getErrorType().name(), e.getMessage());
+            selfProvider.getObject().failSession(session.getId(), e.getErrorType().name(), e.getMessage());
         } catch (Exception e) {
             log.warn("Data collection error for session {}: {}", sessionId, e.getMessage());
-            selfProvider.getObject().failSession(session, "UNKNOWN", e.getMessage());
+            selfProvider.getObject().failSession(session.getId(), "UNKNOWN", e.getMessage());
         }
     }
 
@@ -87,7 +87,7 @@ public class PipelineOrchestrator {
     @Transactional(noRollbackFor = DataCollectionException.class)
     public void resumeAsync(UUID sessionId) {
         AnalysisSession session = sessionRepository.findWithUserById(sessionId).orElseThrow();
-        selfProvider.getObject().updateStatus(session, SessionStatus.RUNNING);
+        selfProvider.getObject().updateStatus(session.getId(), SessionStatus.RUNNING);
 
         AnalysisStage stage = session.getStage();
         cleanFromStage(sessionId, stage);
@@ -101,14 +101,14 @@ public class PipelineOrchestrator {
                 case GENERATING_REPORT -> runFromGenerating(session);
             }
         } catch (DataCollectionException e) {
-            selfProvider.getObject().failSession(session, e.getErrorType().name(), e.getMessage());
+            selfProvider.getObject().failSession(session.getId(), e.getErrorType().name(), e.getMessage());
         } catch (Exception e) {
-            selfProvider.getObject().failSession(session, "UNKNOWN", e.getMessage());
+            selfProvider.getObject().failSession(session.getId(), "UNKNOWN", e.getMessage());
         }
     }
 
     private void runFromCollecting(AnalysisSession session, CreateAnalysisRequest request) {
-        selfProvider.getObject().updateStage(session, AnalysisStage.COLLECTING_DATA);
+        selfProvider.getObject().updateStage(session.getId(), AnalysisStage.COLLECTING_DATA);
 
         List<Competitor> competitors = request.selectedPlaces().stream()
                 .map(place -> mapToCompetitor(session, place))
@@ -124,7 +124,7 @@ public class PipelineOrchestrator {
     }
 
     private void runFromCollecting(AnalysisSession session) {
-        selfProvider.getObject().updateStage(session, AnalysisStage.COLLECTING_DATA);
+        selfProvider.getObject().updateStage(session.getId(), AnalysisStage.COLLECTING_DATA);
 
         List<Competitor> competitors = competitorRepository.findBySessionId(session.getId());
 
@@ -196,7 +196,7 @@ public class PipelineOrchestrator {
             AnalysisSession session, List<Competitor> competitors,
             Map<UUID, List<GooglePlacesClient.RawReview>> rawReviews) {
 
-        selfProvider.getObject().updateStage(session, AnalysisStage.ANONYMIZING);
+        selfProvider.getObject().updateStage(session.getId(), AnalysisStage.ANONYMIZING);
 
         List<Review> savedReviews = new ArrayList<>();
 
@@ -227,7 +227,7 @@ public class PipelineOrchestrator {
     }
 
     private void runClassification(AnalysisSession session, List<Review> reviews) {
-        selfProvider.getObject().updateStage(session, AnalysisStage.CLASSIFYING);
+        selfProvider.getObject().updateStage(session.getId(), AnalysisStage.CLASSIFYING);
 
         if (reviews.isEmpty()) {
             log.warn("No reviews to classify for session {}", session.getId());
@@ -253,7 +253,7 @@ public class PipelineOrchestrator {
             AnalysisSession session, List<Competitor> competitors, List<Review> reviews) {
 
         log.info("start extraction");
-        selfProvider.getObject().updateStage(session, AnalysisStage.EXTRACTING_CHARACTERISTICS);
+        selfProvider.getObject().updateStage(session.getId(), AnalysisStage.EXTRACTING_CHARACTERISTICS);
 
         if (reviews.isEmpty()) {
             log.warn("No reviews for extraction, skipping to report generation");
@@ -365,7 +365,7 @@ public class PipelineOrchestrator {
             AnalysisSession session, List<ExtractedCharacteristic> characteristics) {
 
         log.info("start report generation with {} characteristics", characteristics.size());
-        selfProvider.getObject().updateStage(session, AnalysisStage.GENERATING_REPORT);
+        selfProvider.getObject().updateStage(session.getId(), AnalysisStage.GENERATING_REPORT);
 
         UUID sessionId = session.getId();
 
@@ -412,9 +412,7 @@ public class PipelineOrchestrator {
             }
         }
 
-        session.setStatus(SessionStatus.COMPLETED);
-        session.setStage(null);
-        sessionRepository.save(session);
+        selfProvider.getObject().completeSession(session.getId());
     }
 
     private void saveEmptyReport(AnalysisSession session) {
@@ -425,9 +423,7 @@ public class PipelineOrchestrator {
         report.setAiMarked(false);
         reportRepository.save(report);
 
-        session.setStatus(SessionStatus.COMPLETED);
-        session.setStage(null);
-        sessionRepository.save(session);
+        selfProvider.getObject().completeSession(session.getId());
     }
 
     private Map<UUID, List<GooglePlacesClient.RawReview>> fetchAllReviews(
@@ -453,24 +449,26 @@ public class PipelineOrchestrator {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void updateStage(AnalysisSession session, AnalysisStage stage) {
-        session.setStage(stage);
-        sessionRepository.save(session);
+    public void updateStage(UUID sessionId, AnalysisStage stage) {
+        sessionRepository.updateStage(sessionId, stage);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void updateStatus(AnalysisSession session, SessionStatus status) {
-        session.setStatus(status);
-        sessionRepository.save(session);
+    public void updateStatus(UUID sessionId, SessionStatus status) {
+        sessionRepository.updateStatus(sessionId, status);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void failSession(AnalysisSession session, String errorType, String message) {
-        session.setStatus(SessionStatus.FAILED);
-        sessionRepository.save(session);
+    public void completeSession(UUID sessionId) {
+        sessionRepository.markCompleted(sessionId, SessionStatus.COMPLETED);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void failSession(UUID sessionId, String errorType, String message) {
+        sessionRepository.updateStatus(sessionId, SessionStatus.FAILED);
 
         CollectionErrorLog error = new CollectionErrorLog();
-        error.setSession(session);
+        error.setSession(sessionRepository.getReferenceById(sessionId));
         error.setErrorType(errorType);
         error.setDescription(message);
         error.setTimestamp(LocalDateTime.now());
