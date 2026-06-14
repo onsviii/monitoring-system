@@ -103,7 +103,7 @@ export default function ProfileSetup() {
     setManualMode(true);
     setSelectedCandidate(null);
     setManualName(searchQuery || '');
-    setManualAddress('Львів, площа Ринок');
+    setManualAddress('');
   };
 
   // Збереження профілю та відправка на бекенд
@@ -128,7 +128,7 @@ export default function ProfileSetup() {
         return;
       }
       finalName = manualName.trim();
-      finalAddress = manualAddress.trim() || 'Вручну вказана на мапі';
+      finalAddress = manualAddress.trim();
       finalCoords = manualCoords;
     } else if (selectedCandidate) {
       finalName = selectedCandidate.name;
