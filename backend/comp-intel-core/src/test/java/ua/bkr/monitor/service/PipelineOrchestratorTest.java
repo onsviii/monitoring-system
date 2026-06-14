@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 import ua.bkr.monitor.dto.AggregatedStatistics;
 import ua.bkr.monitor.provider.dto.AspectClassification;
 import ua.bkr.monitor.dto.CreateAnalysisRequest;
@@ -44,9 +45,9 @@ class PipelineOrchestratorTest {
     @Mock private AnalyticalReportRepository reportRepository;
     @Mock private AspectCategoryRepository aspectCategoryRepository;
     @Mock private CharacteristicSourceRepository characteristicSourceRepository;
-    @Mock private CollectionErrorLogRepository collectionErrorLogRepository;
     @Mock private RecommendationRepository recommendationRepository;
     @Mock private RecommendationSourceRepository recommendationSourceRepository;
+    @Mock private ObjectProvider<PipelineOrchestrator> selfProvider;
     private PipelineOrchestrator orchestrator;
 
     @BeforeEach
@@ -65,9 +66,9 @@ class PipelineOrchestratorTest {
                 reportRepository,
                 aspectCategoryRepository,
                 characteristicSourceRepository,
-                collectionErrorLogRepository,
                 recommendationRepository,
-                recommendationSourceRepository
+                recommendationSourceRepository,
+                selfProvider
         );
     }
 
@@ -193,7 +194,7 @@ class PipelineOrchestratorTest {
         assertThat(session.getStatus()).isEqualTo(SessionStatus.COMPLETED);
         assertThat(session.getStage()).isNull();
         verify(competitorRepository).save(argThat(Competitor::isOwnBusiness));
-        verify(collectionErrorLogRepository).save(any(CollectionErrorLog.class));
+        verify(errorLogRepository).save(any(CollectionErrorLog.class));
         verify(characteristicSourceRepository, times(1)).save(any(CharacteristicSource.class));
         verify(recommendationSourceRepository, times(1)).save(any(RecommendationSource.class));
         verify(aspectSentimentRepository, times(2)).save(any(AspectSentiment.class));
