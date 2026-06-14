@@ -38,67 +38,8 @@ const colors = ['#10b981', '#f59e0b', '#d97706', '#ef4444', '#06b6d4'];
 export const RadarChartWidget: React.FC<RadarChartWidgetProps> = ({ id, businessName, radarData, heightClass, hideLegend = false }) => {
   const ownName = `${businessName || 'Копальня кави'} (Ви)`;
 
-  // Fallback mock data fully compliant with the external Spring Boot backend data model (-1.0 ... +1.0)
-  const defaultRadarData = [
-    {
-      competitorId: 'own_business',
-      competitorName: ownName,
-      isOwn: true,
-      aspects: {
-        service: 0.8,
-        product_quality: 0.9,
-        price: 0.4,
-        location: 0.9,
-      }
-    },
-    {
-      competitorId: 'comp_1',
-      competitorName: 'Світ Кави',
-      isOwn: false,
-      aspects: {
-        service: 0.7,
-        product_quality: 0.8,
-        price: -0.6,
-        location: 0.8,
-      }
-    },
-    {
-      competitorId: 'comp_2',
-      competitorName: 'Кафе Кентавр',
-      isOwn: false,
-      aspects: {
-        service: 0.6,
-        product_quality: 0.3,
-        price: -0.4,
-        location: 0.8,
-      }
-    },
-    {
-      competitorId: 'comp_3',
-      competitorName: 'Альтернативна Кава',
-      isOwn: false,
-      aspects: {
-        service: 0.7,
-        product_quality: 0.5,
-        price: 0.8,
-        location: -0.4,
-      }
-    },
-    {
-      competitorId: 'comp_4',
-      competitorName: 'Цісар',
-      isOwn: false,
-      aspects: {
-        service: -0.5,
-        product_quality: -0.8,
-        price: 0.7,
-        location: 0.1,
-      }
-    }
-  ];
-
   // Resolve and update competitor names with the dynamically fetched businessName
-  const competitorsList = (radarData && radarData.length > 0 ? radarData : defaultRadarData).map(comp => {
+  const competitorsList = (radarData || []).map(comp => {
     if (comp.isOwn || comp.competitorId === 'own_business' || comp.competitorName.includes('(Ви)')) {
       return {
         ...comp,
@@ -137,7 +78,10 @@ export const RadarChartWidget: React.FC<RadarChartWidgetProps> = ({ id, business
     LOCATION: 'Локація',
   };
 
-  const aspectsKeys = ['SERVICE', 'PRODUCT_QUALITY', 'PRICE', 'LOCATION'];
+  // Беремо ключі з даних, які прийшли від бекенду
+  const aspectsKeys = competitorsList.length > 0 && competitorsList[0].aspects
+      ? Object.keys(competitorsList[0].aspects)
+      : [];
 
   // Map aspects objects onto axes rows for Recharts
   const chartData = aspectsKeys.map(key => {

@@ -37,47 +37,7 @@ const colors = ['#10b981', '#f59e0b', '#d97706', '#ef4444', '#06b6d4'];
 export const PositioningMatrix: React.FC<PositioningMatrixProps> = ({ id, businessName, matrixData, heightClass, isCompact = false }) => {
   const ownName = `${businessName || 'Копальня кави'} (Ви)`;
 
-  // Deeply aligned mock/fallback data matching backend's real polarity scale (-1.0 ... +1.0)
-  const defaultMatrixData = [
-    {
-      competitorId: 'own_business',
-      competitorName: ownName,
-      isOwn: true,
-      priceSentiment: 0.35,      // X-axis (more on the affordable/value side)
-      qualitySentiment: 0.82     // Y-axis (very high quality)
-    },
-    {
-      competitorId: 'comp_1',
-      competitorName: 'Світ Кави',
-      isOwn: false,
-      priceSentiment: -0.65,     // X-axis (considered expensive)
-      qualitySentiment: 0.75     // Y-axis (high quality)
-    },
-    {
-      competitorId: 'comp_2',
-      competitorName: 'Кафе Кентавр',
-      isOwn: false,
-      priceSentiment: -0.20,     // X-axis (somewhat expensive)
-      qualitySentiment: 0.25     // Y-axis (moderate quality)
-    },
-    {
-      competitorId: 'comp_3',
-      competitorName: 'Альтернативна Кава',
-      isOwn: false,
-      priceSentiment: 0.50,      // X-axis (good value/affordable)
-      qualitySentiment: 0.30     // Y-axis (moderate quality)
-    },
-    {
-      competitorId: 'comp_4',
-      competitorName: 'Цісар',
-      isOwn: false,
-      priceSentiment: 0.60,      // X-axis (very cheap/affordable)
-      qualitySentiment: -0.45    // Y-axis (lower product quality sentiment)
-    }
-  ];
-
-  // Map and sync the competitor names with the actual dynamic businessName
-  const resolvedData = (matrixData && matrixData.length > 0 ? matrixData : defaultMatrixData).map(item => {
+  const resolvedData = (matrixData || []).map(item => {
     if (item.isOwn || item.competitorId === 'own_business' || item.competitorName.includes('(Ви)')) {
       return {
         ...item,

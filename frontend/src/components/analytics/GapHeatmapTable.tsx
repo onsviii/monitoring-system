@@ -19,12 +19,21 @@ export const GapHeatmapTable: React.FC<GapHeatmapTableProps> = ({
   onCellSelect,
   sizeMode = 'compact',
 }) => {
-  const aspectsList: Array<{ key: keyof Competitor['aspects']; label: string }> = [
-    { key: 'service', label: 'Сервіс' },
-    { key: 'product_quality', label: 'Якість продукту' },
-    { key: 'price', label: 'Ціна' },
-    { key: 'location', label: 'Локація' },
-  ];
+  const dynamicAspectsKeys = competitors.length > 0 && competitors[0].aspects
+      ? Object.keys(competitors[0].aspects)
+      : [];
+
+  const aspectLabels: Record<string, string> = {
+    service: 'Сервіс',
+    product_quality: 'Якість продукту',
+    price: 'Ціна',
+    location: 'Локація',
+  };
+
+  const aspectsList = dynamicAspectsKeys.map(key => ({
+    key: key as keyof Competitor['aspects'],
+    label: aspectLabels[key] || key
+  }));
 
   // Colors intensity mapped to -1.0 ... +1.0 polarity scale
   const getCellStyles = (value: number | null | undefined) => {
