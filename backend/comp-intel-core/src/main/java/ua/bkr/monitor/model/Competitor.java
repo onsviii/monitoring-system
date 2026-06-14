@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import ua.bkr.monitor.model.record.Location;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,6 +24,10 @@ public class Competitor {
     private String externalApiId;
     private String name;
     private String address;
+
+    @Embedded
+    private Location location;
+
     private boolean ownBusiness;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -19,6 +19,7 @@ public record CreateAnalysisRequest(
             @NotBlank String placeId,
             @NotBlank String name,
             String address,
-            Double rating
+            Double rating,
+            Location location
     ) {}
 }

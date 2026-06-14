@@ -1,5 +1,7 @@
 package ua.bkr.monitor.dto;
 
+import ua.bkr.monitor.model.record.Location;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -11,6 +13,7 @@ public record CompetitorDto(
         Double rating,
         int reviewCount,
         boolean isOwn,
+        Location location,
         List<AspectDto> aspects,
         List<FreeCharacteristicDto> freeCharacteristics
 ) {}
