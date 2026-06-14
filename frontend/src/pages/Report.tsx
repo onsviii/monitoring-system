@@ -217,13 +217,11 @@ export default function Report() {
     return [];
   }, [analysisReport, businessName]);
 
-  // Primary states for interactivity
-  const [selectedCompetitor, setSelectedCompetitor] = useState<string | null>(null);
   const [drilldownFilter, setDrilldownFilter] = useState<{ competitorName: string | null; aspectName: string | null; sourceReviewIds?: string[] }>({
     competitorName: null,
     aspectName: null,
   });
-  const [activeTab, setActiveTab] = useState<'all' | 'strategic' | 'insights'>('all');
+
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   
   const [activeChartTab, setActiveChartTab] = useState<'radar' | 'heatmap' | 'matrix' | 'trends'>('radar');
