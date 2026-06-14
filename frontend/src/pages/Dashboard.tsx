@@ -18,7 +18,6 @@ import {
 import {
   MapPin,
   ChevronRight,
-  Sparkles,
   Play,
   AlertCircle,
   Compass,
