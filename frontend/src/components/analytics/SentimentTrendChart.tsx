@@ -53,6 +53,31 @@ export const SentimentTrendChart: React.FC<SentimentTrendChartProps> = ({ id, bu
     return series;
   });
 
+  // Кастомна крапка, розмір якої залежить від кількості відгуків
+  const renderCustomDot = (props: any) => {
+    const { cx, cy, payload, dataKey, stroke } = props;
+    const reviewCount = payload[`${dataKey}_count`] || 0;
+
+    // Базовий радіус 2, максимальний 6. Логарифмічна або лінійна шкала залежно від максимуму
+    const calculatedRadius = Math.min(Math.max(2 + (reviewCount * 0.5), 2), 7);
+
+    // Якщо відгуків мало (1-2), робимо точку напівпрозорою
+    const opacity = reviewCount <= 2 ? 0.4 : 1;
+
+    return (
+        <circle
+            cx={cx}
+            cy={cy}
+            r={calculatedRadius}
+            fill={stroke}
+            fillOpacity={opacity}
+            stroke="#fff"
+            strokeWidth={1}
+            key={`dot-${payload.monthKey}-${dataKey}`}
+        />
+    );
+  };
+
   // Stateful client-side filtering for competitors comparison
   const [visibleIds, setVisibleIds] = React.useState<string[]>(() => {
     const ownComp = resolvedTrends.find(s => s.isOwn);
@@ -227,19 +252,17 @@ export const SentimentTrendChart: React.FC<SentimentTrendChartProps> = ({ id, bu
               const isSinglePoint = series.points.length === 1;
 
               return (
-                <Line
-                  key={series.competitorId}
-                  type="monotone"
-                  dataKey={series.competitorName}
-                  stroke={color}
-                  strokeWidth={isOwn ? 3.5 : 1.5}
-                  /* Active state highlighted */
-                  activeDot={{ r: isOwn ? 7 : 5, strokeWidth: 1, stroke: '#fff' }}
-                  /* Ensure dot is ALWAYS visible, especially when single point */
-                  dot={{ r: isOwn ? 4 : (isSinglePoint ? 4.5 : 2), strokeWidth: 0.5 }}
-                  connectNulls={true}
-                  style={{ filter: isOwn ? 'drop-shadow(0px 2px 4px rgba(79, 70, 229, 0.25))' : 'none' }}
-                />
+                  <Line
+                      key={series.competitorId}
+                      type="monotone"
+                      dataKey={series.competitorName}
+                      stroke={color}
+                      strokeWidth={isOwn ? 3.5 : 1.5}
+                      activeDot={{ r: isOwn ? 7 : 5, strokeWidth: 1, stroke: '#fff' }}
+                      dot={renderCustomDot}
+                      connectNulls={true}
+                      style={{ filter: isOwn ? 'drop-shadow(0px 2px 4px rgba(79, 70, 229, 0.25))' : 'none' }}
+                  />
               );
             })}
           </LineChart>
