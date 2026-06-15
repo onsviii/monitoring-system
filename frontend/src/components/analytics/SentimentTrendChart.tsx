@@ -30,6 +30,7 @@ interface SentimentTrendSeries {
 
 interface SentimentTrendChartProps {
   id?: string;
+  ownCompetitorId?: string;
   businessName?: string;
   heightClass?: string;
   trendData?: SentimentTrendSeries[];
@@ -37,13 +38,13 @@ interface SentimentTrendChartProps {
 
 const colors = ['#10b981', '#f59e0b', '#d97706', '#ef4444', '#06b6d4'];
 
-export const SentimentTrendChart: React.FC<SentimentTrendChartProps> = ({ id, businessName, trendData, heightClass }) => {
+export const SentimentTrendChart: React.FC<SentimentTrendChartProps> = ({ id, ownCompetitorId, businessName, trendData, heightClass }) => {
   const ownName = businessName ? `${businessName} (Ви)` : 'Ваш заклад (Ви)';
   const rawTrends = trendData || [];
 
   // Resolve own competitor names dynamically based on user context
   const resolvedTrends = rawTrends.map(series => {
-    if (series.isOwn || series.competitorId === 'own_business' || series.competitorName.includes('(Ви)')) {
+    if (series.isOwn || series.competitorId === ownCompetitorId) {
       return {
         ...series,
         competitorName: ownName,

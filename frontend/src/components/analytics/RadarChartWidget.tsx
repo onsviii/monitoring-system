@@ -17,6 +17,7 @@ import {
 
 interface RadarChartWidgetProps {
   id?: string;
+  ownCompetitorId?: string;
   businessName?: string;
   heightClass?: string;
   hideLegend?: boolean;
@@ -35,12 +36,11 @@ interface RadarChartWidgetProps {
 
 const colors = ['#10b981', '#f59e0b', '#d97706', '#ef4444', '#06b6d4'];
 
-export const RadarChartWidget: React.FC<RadarChartWidgetProps> = ({ id, businessName, radarData, heightClass, hideLegend = false }) => {
+export const RadarChartWidget: React.FC<RadarChartWidgetProps> = ({ id, ownCompetitorId, businessName, radarData, heightClass, hideLegend = false }) => {
   const ownName = businessName ? `${businessName} (Ви)` : 'Ваш заклад (Ви)';
 
-  // Resolve and update competitor names with the dynamically fetched businessName
   const competitorsList = (radarData || []).map(comp => {
-    if (comp.isOwn || comp.competitorId === 'own_business' || comp.competitorName.includes('(Ви)')) {
+    if (comp.isOwn || comp.competitorId === ownCompetitorId) {
       return {
         ...comp,
         competitorName: ownName,

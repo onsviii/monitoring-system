@@ -180,6 +180,8 @@ export default function Report() {
     return [];
   }, [analysisReport, businessName]);
 
+  const ownCompetitorId = competitors.find(c => c.isOwn)?.id;
+
   const radarChartData = React.useMemo(() => {
     if (analysisReport && analysisReport.aggregatedStatistics?.radarChart) {
       return analysisReport.aggregatedStatistics.radarChart;
@@ -676,7 +678,7 @@ export default function Report() {
                     <ChartSkeletonLoader text="Аналіз профілів конкурентів" />
                   ) : (
                     <>
-                      <RadarChartWidget businessName={businessName} radarData={radarChartData} heightClass="h-[380px] sm:h-[450px]" />
+                      <RadarChartWidget ownCompetitorId={ownCompetitorId} businessName={businessName} radarData={radarChartData} heightClass="h-[380px] sm:h-[450px]" />
                       <p className="text-xs text-gray-600 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/60 mt-3.5 leading-relaxed">
                         <strong className="text-indigo-950 font-bold block mb-0.5">Профілі конкурентів:</strong>
                         Порівнює ваш заклад із конкурентами за головними критеріями. Дозволяє миттєво побачити ваші сильні сторони та слабкі місця на фоні інших.
@@ -723,7 +725,7 @@ export default function Report() {
                     <ChartSkeletonLoader text="Побудова matrix позиціонування" />
                   ) : (
                     <>
-                      <PositioningMatrix businessName={businessName} matrixData={positioningMatrixData} heightClass="h-[380px] sm:h-[450px]" />
+                      <PositioningMatrix ownCompetitorId={ownCompetitorId} businessName={businessName} matrixData={positioningMatrixData} heightClass="h-[380px] sm:h-[450px]" />
                       <p className="text-xs text-gray-600 bg-amber-50/50 p-3 rounded-xl border border-amber-100/60 mt-3.5 leading-relaxed">
                         <strong className="text-amber-950 font-bold block mb-0.5">Матриця позиціювання:</strong>
                         Розподіляє всі заклади за співвідношенням ціни та якості. Допомагає зрозуміть, з ким ви змагаєтесь напряму за клієнта та де на ринку є вільне місце.
@@ -743,7 +745,7 @@ export default function Report() {
                     <ChartSkeletonLoader text="Розрахунок трендів тональності" />
                   ) : (
                     <>
-                      <SentimentTrendChart businessName={businessName} trendData={sentimentTrendsData} heightClass="h-[380px] sm:h-[440px]" />
+                      <SentimentTrendChart ownCompetitorId={ownCompetitorId} businessName={businessName} trendData={sentimentTrendsData} heightClass="h-[380px] sm:h-[440px]" />
                       <p className="text-xs text-gray-600 bg-blue-50/50 p-3 rounded-xl border border-blue-100/60 mt-3.5 leading-relaxed">
                         <strong className="text-blue-950 font-bold block mb-0.5">Динаміка оцінок:</strong>
                         Показує, як змінювалася репутація закладів із часом. Допомагає вчасно помітити, чиї позиції зростають, а хто починає втрачати лояльність клієнтів.
