@@ -132,18 +132,18 @@ export default function Report() {
 
   const competitors = React.useMemo(() => {
     if (analysisReport && analysisReport.competitors && analysisReport.competitors.length > 0) {
-      const radarItems = analysisReport.aggregatedStatistics?.radarChart || [];
+      const heatmapItems = analysisReport.aggregatedStatistics?.heatmap || [];
 
       return analysisReport.competitors.map(comp => {
-        const matchedRadar = radarItems.find(r => r.competitorId === comp.id || r.competitorName === comp.name);
+        const matchedHeatmap = heatmapItems.find(h => h.competitorId === comp.id || h.competitorName === comp.name);
 
         const defaultAspects = { service: null, product_quality: null, price: null, location: null };
 
-        const aspects = matchedRadar ? {
-          service: matchedRadar.aspects.SERVICE ?? null,
-          product_quality: matchedRadar.aspects.PRODUCT_QUALITY ?? null,
-          price: matchedRadar.aspects.PRICE ?? null,
-          location: matchedRadar.aspects.LOCATION ?? null,
+        const aspects = (matchedHeatmap && matchedHeatmap.aspects) ? {
+          service: matchedHeatmap.aspects.SERVICE ?? null,
+          product_quality: matchedHeatmap.aspects.PRODUCT_QUALITY ?? null,
+          price: matchedHeatmap.aspects.PRICE ?? null,
+          location: matchedHeatmap.aspects.LOCATION ?? null,
         } : defaultAspects;
 
         const mappedTags = comp.freeCharacteristics ? comp.freeCharacteristics.map(char => ({
