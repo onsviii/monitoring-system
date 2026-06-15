@@ -103,8 +103,6 @@ public class LlmAnalysisService {
                 formatReviews(allReviews)
         );
 
-        log.info("Generating recommendations for session {} with prompt '{}'", sessionId, system + user);
-
         String response = call(system, user, TEMPERATURE_LOW, sessionId, "RECOMMENDATIONS");
 
         List<GeneratedRecommendation> parsed = parseList(response, GeneratedRecommendation.class);
