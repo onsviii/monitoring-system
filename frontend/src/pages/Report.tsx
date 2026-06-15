@@ -137,13 +137,13 @@ export default function Report() {
       return analysisReport.competitors.map(comp => {
         const matchedRadar = radarItems.find(r => r.competitorId === comp.id || r.competitorName === comp.name);
 
-        const defaultAspects = { service: 0, product_quality: 0, price: 0, location: 0 };
+        const defaultAspects = { service: null, product_quality: null, price: null, location: null };
 
         const aspects = matchedRadar ? {
-          service: matchedRadar.aspects.SERVICE ?? 0,
-          product_quality: matchedRadar.aspects.PRODUCT_QUALITY ?? 0,
-          price: matchedRadar.aspects.PRICE ?? 0,
-          location: matchedRadar.aspects.LOCATION ?? 0,
+          service: matchedRadar.aspects.SERVICE ?? null,
+          product_quality: matchedRadar.aspects.PRODUCT_QUALITY ?? null,
+          price: matchedRadar.aspects.PRICE ?? null,
+          location: matchedRadar.aspects.LOCATION ?? null,
         } : defaultAspects;
 
         const mappedTags = comp.freeCharacteristics ? comp.freeCharacteristics.map(char => ({
@@ -429,7 +429,7 @@ export default function Report() {
 
       {/* Export notification toast */}
       {exportMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg text-xs flex items-center gap-2 animate-bounce">
+        <div className="fixed bottom-6 left-6 z-50 bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg text-xs flex items-center gap-2 animate-bounce">
           <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
           <span>{exportMessage}</span>
         </div>
