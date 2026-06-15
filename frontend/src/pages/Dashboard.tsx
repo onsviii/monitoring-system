@@ -119,6 +119,14 @@ export default function Dashboard() {
       }
     }
 
+    fetchNiches();
+    fetchProfile();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   // Очистка таймера при розмонтуванні
   useEffect(() => {
     return () => {
@@ -162,8 +170,7 @@ export default function Dashboard() {
           setCurrentStage(statusData.stage || null);
           setStep('polling');
           startPolling(lastId);
-        }
-        else if (statusData.status === 'FAILED') {
+        } else if (statusData.status === 'FAILED') {
           setCurrentSessionId(lastId);
           setCurrentStatus(statusData.status);
           setCurrentStage(statusData.stage || null);
@@ -257,7 +264,7 @@ export default function Dashboard() {
       const response = await createAnalysis({
         reportName: analysisName.trim(),
         nicheCode: nicheCode,
-        location: location as {latitude: number; longitude: number},
+        location: location as { latitude: number; longitude: number },
         radiusKm,
         selectedPlaces: selectedPlacesData
       });
@@ -320,13 +327,13 @@ export default function Dashboard() {
         <div className="max-w-xl mx-auto">
           {isLoadingProfile ? (
               <div className="bg-white border border-gray-150 rounded-xl p-8 shadow-sm flex flex-col items-center justify-center space-y-3 min-h-[300px]">
-                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"/>
                 <p className="text-xs text-gray-500 font-medium">Завантаження вашого профілю...</p>
               </div>
           ) : !hasProfile ? (
               <div className="bg-white border border-gray-150 rounded-xl p-6 sm:p-8 shadow-sm text-center space-y-6">
                 <div className="inline-flex items-center justify-center bg-amber-50 text-amber-600 rounded-full p-4 shadow-3xs">
-                  <Compass className="w-8 h-8 animate-pulse text-amber-600" />
+                  <Compass className="w-8 h-8 animate-pulse text-amber-600"/>
                 </div>
                 <div className="space-y-2">
                   <h3 className="font-bold text-gray-900 text-sm">Профіль бізнесу не налаштовано</h3>
