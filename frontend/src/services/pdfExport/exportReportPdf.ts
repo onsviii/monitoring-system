@@ -8,11 +8,11 @@
  */
 
 import jsPDF from 'jspdf';
-import autoTable, { type RowInput } from 'jspdf-autotable';
-import html2canvas from 'html2canvas';
+import autoTable, {type RowInput} from 'jspdf-autotable';
+import {toPng} from 'html-to-image';
 
-import { FONT_FAMILY, registerCyrillicFonts } from './fonts';
-import type { CompetitorReportResponse } from '../../api/analysisService';
+import {FONT_FAMILY, registerCyrillicFonts} from './fonts';
+import type {CompetitorReportResponse} from '../../api/analysisService';
 
 export const PDF_CHART_IDS = {
   map: 'pdf-capture-map',
@@ -160,32 +160,30 @@ function renderSummary(doc: jsPDF, ctx: ExportContext, cursor: CursorState): voi
 }
 
 async function renderChartImage(
-  doc: jsPDF,
-  domId: string,
-  caption: string,
-  cursor: CursorState
+    doc: jsPDF,
+    domId: string,
+    caption: string,
+    cursor: CursorState
 ): Promise<void> {
   const element = document.getElementById(domId);
   if (!element) return;
 
-  // Дочекатися анімації Recharts
   await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  await new Promise(resolve => setTimeout(resolve, 150)); // Легка затримка для надійності
 
-  let canvas: HTMLCanvasElement;
+  let imgData: string;
   try {
-    canvas = await html2canvas(element, {
-      scale: 2,
+    imgData = await toPng(element, {
+      pixelRatio: 2,
       backgroundColor: '#ffffff',
-      logging: false,
-      useCORS: true,
+      cacheBust: true,
     });
   } catch (err) {
     console.warn(`Не вдалося захопити ${domId}:`, err);
     return;
   }
 
-  const imgData = canvas.toDataURL('image/png');
-  const ratio = canvas.height / canvas.width;
+  const ratio = element.clientHeight / element.clientWidth;
   const imgWidth = CONTENT_WIDTH;
   const imgHeight = imgWidth * ratio;
 
