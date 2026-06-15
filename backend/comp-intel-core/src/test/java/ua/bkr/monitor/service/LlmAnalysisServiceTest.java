@@ -13,6 +13,7 @@ import ua.bkr.monitor.model.record.ChatTurn;
 import ua.bkr.monitor.model.record.ExtractedCharacteristic;
 import ua.bkr.monitor.model.record.GeneratedRecommendation;
 import ua.bkr.monitor.model.record.IndexedReview;
+import ua.bkr.monitor.model.record.OwnerBusinessContext;
 import ua.bkr.monitor.provider.LlmProvider;
 import ua.bkr.monitor.repository.AnalysisSessionRepository;
 import ua.bkr.monitor.repository.LLMInteractionLogRepository;
@@ -90,7 +91,9 @@ class LlmAnalysisServiceTest {
         );
 
         String response = service(new ObjectMapper())
-                .chat("What next?", "Context", history, sessionId);
+                .chat("What next?",
+                        new OwnerBusinessContext("My Cafe", "Кав'ярня", "Київ"),
+                        "Context", history, sessionId);
 
         assertThat(response).isEqualTo("Answer");
         ArgumentCaptor<List<Map<String, String>>> captor = ArgumentCaptor.forClass(List.class);
@@ -111,7 +114,9 @@ class LlmAnalysisServiceTest {
         when(llmProvider.generate(anyList(), anyDouble())).thenThrow(new RuntimeException("boom"));
 
         assertThatThrownBy(() -> service(new ObjectMapper())
-                .chat("Question", "Context", List.of(), sessionId))
+                .chat("Question",
+                        new OwnerBusinessContext("My Cafe", "Кав'ярня", "Київ"),
+                        "Context", List.of(), sessionId))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("TestProvider");
 

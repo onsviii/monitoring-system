@@ -9,6 +9,7 @@ import ua.bkr.monitor.model.record.ChatTurn;
 import ua.bkr.monitor.model.record.ExtractedCharacteristic;
 import ua.bkr.monitor.model.record.GeneratedRecommendation;
 import ua.bkr.monitor.model.record.IndexedReview;
+import ua.bkr.monitor.model.record.OwnerBusinessContext;
 import ua.bkr.monitor.provider.LlmProvider;
 import ua.bkr.monitor.repository.AnalysisSessionRepository;
 import ua.bkr.monitor.repository.LLMInteractionLogRepository;
@@ -109,16 +110,22 @@ public class LlmAnalysisService {
         return validateRecommendations(parsed, allReviews.size());
     }
 
-    public String chat(String userMessage, String reportContext, List<ChatTurn> history, UUID sessionId) {
+    public String chat(String userMessage, OwnerBusinessContext owner, String reportContext,
+                       List<ChatTurn> history, UUID sessionId) {
         String system = """
                 Ти — AI-асистент для інтерпретації результатів аналізу конкурентного \
-                середовища. Відповідай ВИКЛЮЧНО на основі наданого контексту звіту. \
+                середовища. Відповідай ВИКЛЮЧНО на основі наданого контексту звіту \
+                та профілю бізнесу користувача. Поради формулюй з перспективи \
+                власника вказаного нижче бізнесу, а не конкурентів. \
                 Якщо інформації недостатньо — скажи про це чесно. \
                 Це дорадчий інструмент; кінцеве рішення приймає користувач.
-                
-                КОНТЕКСТ ЗВІТУ:
+
+                БІЗНЕС КОРИСТУВАЧА (для якого даються поради):
                 %s
-                """.formatted(reportContext);
+
+                КОНТЕКСТ ЗВІТУ ПРО КОНКУРЕНТІВ:
+                %s
+                """.formatted(formatOwnerContext(owner), reportContext);
 
         List<Map<String, String>> messages = new ArrayList<>();
         messages.add(Map.of("role", "system", "content", system));
@@ -272,6 +279,15 @@ public class LlmAnalysisService {
                     .append(" (Відгуки: ").append(c.sourceIndices()).append(")\n");
         }
         return sb.toString();
+    }
+
+    private String formatOwnerContext(OwnerBusinessContext owner) {
+        if (owner == null) return "Профіль користувача не вказано.";
+        StringBuilder sb = new StringBuilder();
+        if (hasText(owner.businessName())) sb.append(" - Назва: ").append(owner.businessName()).append("\n");
+        if (hasText(owner.nicheName()))    sb.append(" - Ніша: ").append(owner.nicheName()).append("\n");
+        if (hasText(owner.address()))      sb.append(" - Адреса: ").append(owner.address()).append("\n");
+        return sb.isEmpty() ? "Профіль користувача не вказано." : sb.toString();
     }
 
     private String formatReviews(List<IndexedReview> reviews) {

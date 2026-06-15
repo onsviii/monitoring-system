@@ -14,7 +14,9 @@ import ua.bkr.monitor.model.AnalysisSession;
 import ua.bkr.monitor.model.AnalyticalReport;
 import ua.bkr.monitor.model.ChatMessage;
 import ua.bkr.monitor.model.Competitor;
+import ua.bkr.monitor.model.UserProfile;
 import ua.bkr.monitor.model.enums.ChatRole;
+import ua.bkr.monitor.model.record.OwnerBusinessContext;
 import ua.bkr.monitor.repository.AnalysisSessionRepository;
 import ua.bkr.monitor.repository.AnalyticalReportRepository;
 import ua.bkr.monitor.repository.CompetitorRepository;
@@ -52,6 +54,7 @@ public class ChatService {
 
         String llmResponse = llmAnalysisService.chat(
                 request.text(),
+                buildOwnerContext(session.getUser()),
                 reportContext,
                 history.stream().map(messageMapper::toChatTurn).toList(),
                 sessionId
@@ -71,6 +74,14 @@ public class ChatService {
                 .stream()
                 .map(m -> new MessageResponse(m.getId(), m.getRole(), m.getText(), m.getTimestamp()))
                 .toList();
+    }
+
+    private OwnerBusinessContext buildOwnerContext(UserProfile user) {
+        return new OwnerBusinessContext(
+                user.getBusinessName(),
+                user.getNiche() != null ? user.getNiche().getDisplayName() : null,
+                user.getAddress()
+        );
     }
 
     private ChatMessage buildMessage(AnalysisSession session, ChatRole role, String text) {
