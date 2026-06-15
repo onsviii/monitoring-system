@@ -26,6 +26,7 @@ import ReportMap from '../components/ui/ReportMap';
 import StrategyAIChat from '../components/analytics/StrategyAIChat';
 import { getAnalysisReport, getAnalysisStatus, CompetitorReportResponse, updateReportName, getAnalysisSources, getSourcesByReviewIds, type ReviewAspects } from '../api/analysisService';
 import { getProfile } from '../api/profileService';
+import { PDF_CHART_IDS } from '../services/pdfExport/exportReportPdf';
 
 const ChartSkeletonLoader = ({ text }: { text: string }) => (
   <div className="w-full h-64 flex flex-col items-center justify-center space-y-3.5 bg-gray-50/50 rounded-xl animate-pulse border border-dashed border-gray-200 p-4">
@@ -224,6 +225,7 @@ export default function Report() {
   });
 
   const [exportMessage, setExportMessage] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   
   const [activeChartTab, setActiveChartTab] = useState<'radar' | 'heatmap' | 'matrix' | 'trends'>('radar');
 
@@ -324,20 +326,47 @@ export default function Report() {
   };
 
   const handleExport = () => {
-    setExportMessage('Генерація PDF-звіту та завантаження першоджерел...');
-    setTimeout(() => {
-      // Simulate file download by creating a fake element
-      const element = document.createElement('a');
-      const file = new Blob([JSON.stringify({ report: 'SmartBiz Competitor Intelligence Report', competitors: competitors, recommendations: recommendations }, null, 2)], { type: 'text/plain' });
-      element.href = URL.createObjectURL(file);
-      element.download = 'SmartBiz_Competitor_Intelligence_Report.json';
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-      setExportMessage('Звіт успішно експортовано у форматі JSON/PDF!');
-      setTimeout(() => setExportMessage(null), 3500);
-    }, 1500);
+    if (!analysisReport || isExporting) return;
+    setExportMessage('Генерація PDF-звіту, це може зайняти кілька секунд...');
+    setIsExporting(true);
   };
+
+  useEffect(() => {
+    if (!isExporting || !analysisReport) return;
+
+    let cancelled = false;
+
+    (async () => {
+      // Чекаємо два кадри, щоб React встиг змонтувати offscreen staging-контейнер,
+      // а Recharts — обрахувати ResponsiveContainer.
+      await new Promise<void>(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      );
+      // Додатковий запас для Leaflet-тайлів та анімацій Recharts.
+      await new Promise(resolve => setTimeout(resolve, 350));
+
+      try {
+        const { exportReportPdf } = await import('../services/pdfExport/exportReportPdf');
+        await exportReportPdf({
+          report: analysisReport,
+          businessName,
+          businessAddress,
+          businessNiche,
+        });
+        if (!cancelled) setExportMessage('Звіт успішно завантажено у форматі PDF.');
+      } catch (err) {
+        console.error('Помилка генерації PDF:', err);
+        if (!cancelled) setExportMessage('Не вдалося згенерувати PDF. Перевірте консоль для деталей.');
+      } finally {
+        if (!cancelled) {
+          setIsExporting(false);
+          setTimeout(() => setExportMessage(null), 3500);
+        }
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [isExporting, analysisReport, businessName, businessAddress, businessNiche]);
 
   const handleReportNameEdit = () => {
     setReportNameError(null);
@@ -389,10 +418,11 @@ export default function Report() {
           <Badge variant="success">Аналіз завершено</Badge>
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 px-3.5 py-1.5 border border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg shadow-3xs cursor-pointer transition-all duration-200 focus:outline-none"
+            disabled={isExporting || !analysisReport}
+            className="flex items-center gap-2 px-3.5 py-1.5 border border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg shadow-3xs cursor-pointer transition-all duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
           >
             <Download className="w-3.5 h-3.5" />
-            Експортувати звіт
+            {isExporting ? 'Генерація PDF...' : 'Експортувати звіт (PDF)'}
           </button>
         </div>
       </div>
@@ -864,6 +894,39 @@ export default function Report() {
         </div>
 
       </div>
+
+      {/*
+        Offscreen staging для PDF-експорту. Рендерить усі чарти + мапу одночасно
+        з фіксованою шириною, щоб html2canvas міг їх захопити незалежно від
+        активної вкладки. Видимий для html2canvas (DOM-доступний), але
+        прибраний з viewport через absolute + left:-99999.
+      */}
+      {isExporting && analysisReport && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            left: '-99999px',
+            top: 0,
+            width: '900px',
+            background: '#ffffff',
+            zIndex: -1,
+          }}
+        >
+          <div id={PDF_CHART_IDS.map} style={{ width: '900px', height: '420px', background: '#f9fafb' }}>
+            <ReportMap businessName={businessName} competitors={competitors as any} />
+          </div>
+          <div id={PDF_CHART_IDS.radar} style={{ width: '900px', padding: '16px', background: '#ffffff' }}>
+            <RadarChartWidget ownCompetitorId={ownCompetitorId} businessName={businessName} radarData={radarChartData} heightClass="h-[460px]" />
+          </div>
+          <div id={PDF_CHART_IDS.positioning} style={{ width: '900px', padding: '16px', background: '#ffffff' }}>
+            <PositioningMatrix ownCompetitorId={ownCompetitorId} businessName={businessName} matrixData={positioningMatrixData} heightClass="h-[460px]" />
+          </div>
+          <div id={PDF_CHART_IDS.trends} style={{ width: '900px', padding: '16px', background: '#ffffff' }}>
+            <SentimentTrendChart ownCompetitorId={ownCompetitorId} businessName={businessName} trendData={sentimentTrendsData} heightClass="h-[440px]" />
+          </div>
+        </div>
+      )}
 
     </div>
   );
