@@ -200,7 +200,7 @@ function renderHeatmapTable(doc: jsPDF, ctx: ExportContext, cursor: CursorState)
   ensureSpace(doc, cursor, 40);
   sectionHeader(doc, 'Gap Analysis — теплова карта аспектів', cursor);
 
-  const aspectKeys = Object.keys(heatmap[0].aspects) as Array<keyof typeof heatmap[0]['aspects']>;
+  const aspectKeys = ['SERVICE', 'PRODUCT_QUALITY', 'PRICE', 'LOCATION'] as const;
   const head = [['Конкурент', ...aspectKeys.map(k => ASPECT_LABELS[k] || k)]];
 
   const body: RowInput[] = heatmap.map(row => {
