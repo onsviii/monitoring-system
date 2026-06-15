@@ -13,6 +13,7 @@ import ua.bkr.monitor.repository.CompetitorRepository;
 import ua.bkr.monitor.repository.ReviewRepository;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,6 +26,7 @@ public class StatisticsAggregator {
     private final AspectSentimentRepository aspectSentimentRepository;
 
     private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
+    private static final int SHRINKAGE_PSEUDOCOUNT = 5;
 
     public AggregatedStatistics aggregate(UUID sessionId) {
         List<Competitor> competitors = competitorRepository.findBySessionId(sessionId);
@@ -111,44 +113,85 @@ public class StatisticsAggregator {
     }
 
     private List<CompetitorTrend> buildSentimentTrends(
-            List<Competitor> competitors, Map<UUID, List<AspectSentiment>> sentimentsByCompetitor,
+            List<Competitor> competitors,
+            Map<UUID, List<AspectSentiment>> sentimentsByCompetitor,
             List<Review> allReviews) {
 
         Map<UUID, LocalDate> reviewDates = allReviews.stream()
                 .collect(Collectors.toMap(Review::getId, r -> r.getCreatedAt().toLocalDate()));
 
         return competitors.stream()
-                .map(c -> {
-                    List<AspectSentiment> sentiments =
-                            sentimentsByCompetitor.getOrDefault(c.getId(), List.of());
-
-                    Map<String, List<AspectSentiment>> byMonth = sentiments.stream()
-                            .filter(s -> s.getPolarity() != null && s.getPolarity() != 0)
-                            .filter(s -> reviewDates.containsKey(s.getReview().getId()))
-                            .collect(Collectors.groupingBy(s -> {
-                                LocalDate date = reviewDates.get(s.getReview().getId());
-                                return date.format(MONTH_FORMAT);
-                            }));
-
-                    List<MonthlyPoint> points = byMonth.entrySet().stream()
-                            .sorted(Map.Entry.comparingByKey())
-                            .map(entry -> new MonthlyPoint(
-                                    entry.getKey(),
-                                    entry.getValue().stream()
-                                            .mapToInt(AspectSentiment::getPolarity)
-                                            .average()
-                                            .orElse(0.0),
-                                    (int) entry.getValue().stream()
-                                            .map(s -> s.getReview().getId())
-                                            .distinct()
-                                            .count()
-                            ))
-                            .toList();
-
-                    return new CompetitorTrend(c.getId(), c.getName(), points);
-                })
+                .map(c -> new CompetitorTrend(
+                        c.getId(),
+                        c.getName(),
+                        buildSmoothedTrend(
+                                sentimentsByCompetitor.getOrDefault(c.getId(), List.of()),
+                                reviewDates)))
                 .toList();
     }
+
+    private List<MonthlyPoint> buildSmoothedTrend(
+            List<AspectSentiment> sentiments,
+            Map<UUID, LocalDate> reviewDates) {
+
+        record Obs(YearMonth month, int polarity, UUID reviewId) {}
+
+        List<Obs> observations = sentiments.stream()
+                .filter(s -> s.getPolarity() != null && s.getPolarity() != 0)
+                .map(s -> {
+                    LocalDate d = reviewDates.get(s.getReview().getId());
+                    return d == null ? null
+                            : new Obs(YearMonth.from(d), s.getPolarity(), s.getReview().getId());
+                })
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (observations.isEmpty()) return List.of();
+
+        // Empirical-Bayes prior: середня тональність конкурента за весь період
+        double prior = observations.stream()
+                .mapToInt(Obs::polarity)
+                .average()
+                .orElse(0.0);
+
+        // Один прохід по місяцях: сума, лічильник, унікальні reviewId
+        Map<YearMonth, MonthAccumulator> byMonth = new TreeMap<>();
+        for (Obs o : observations) {
+            byMonth.computeIfAbsent(o.month(), m -> new MonthAccumulator())
+                    .add(o.polarity(), o.reviewId());
+        }
+
+        List<MonthlyPoint> points = new ArrayList<>(byMonth.size());
+        for (Map.Entry<YearMonth, MonthAccumulator> e : byMonth.entrySet()) {
+            MonthAccumulator acc = e.getValue();
+            int n = acc.count;
+            double rawMean = (double) acc.polaritySum / n;
+
+            // Posterior mean (Bayesian shrinkage)
+            double smoothed = (n * rawMean + SHRINKAGE_PSEUDOCOUNT * prior)
+                    / (n + SHRINKAGE_PSEUDOCOUNT);
+
+            points.add(new MonthlyPoint(
+                    e.getKey().format(MONTH_FORMAT),
+                    Math.round(smoothed * 100.0) / 100.0,
+                    acc.reviewIds.size()
+            ));
+        }
+        return points;
+    }
+
+    private static final class MonthAccumulator {
+        int polaritySum = 0;
+        int count = 0;
+        final Set<UUID> reviewIds = new HashSet<>();
+
+        void add(int polarity, UUID reviewId) {
+            polaritySum += polarity;
+            count++;
+            reviewIds.add(reviewId);
+        }
+    }
+
 
     private Map<Aspect, Double> computeAspectAverages(List<AspectSentiment> sentiments, boolean nullableForEmpty) {
         Map<Aspect, List<Integer>> grouped = groupPolaritiesByAspect(sentiments);
